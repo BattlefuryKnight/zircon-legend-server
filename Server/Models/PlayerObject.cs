@@ -257,33 +257,7 @@ namespace Zircon.Server.Models
             foreach (MonsterObject ob in _tagClearList)
                 ob.EXPOwner = null;
 
-            if (CanFlamingSword && SEnvir.Now >= FlamingSwordTime)
-            {
-                CanFlamingSword = false;
-                Enqueue(new S.MagicToggle { Magic = MagicType.FlamingSword, CanUse = CanFlamingSword });
-
-                Connection.ReceiveChat(string.Format(Connection.Language.ChargeExpire, Magics[MagicType.FlamingSword].Info.Name), MessageType.Hint);
-                foreach (SConnection con in Connection.Observers)
-                    con.ReceiveChat(string.Format(con.Language.ChargeExpire, Magics[MagicType.FlamingSword].Info.Name), MessageType.Hint);
-            }
-            if (CanDragonRise && SEnvir.Now >= DragonRiseTime)
-            {
-                CanDragonRise = false;
-                Enqueue(new S.MagicToggle { Magic = MagicType.DragonRise, CanUse = CanDragonRise });
-
-                Connection.ReceiveChat(string.Format(Connection.Language.ChargeExpire, Magics[MagicType.DragonRise].Info.Name), MessageType.Hint);
-                foreach (SConnection con in Connection.Observers)
-                    con.ReceiveChat(string.Format(con.Language.ChargeExpire, Magics[MagicType.DragonRise].Info.Name), MessageType.Hint);
-            }
-            if (CanBladeStorm && SEnvir.Now >= BladeStormTime)
-            {
-                CanBladeStorm = false; ;
-                Enqueue(new S.MagicToggle { Magic = MagicType.BladeStorm, CanUse = CanBladeStorm });
-
-                Connection.ReceiveChat(string.Format(Connection.Language.ChargeExpire, Magics[MagicType.BladeStorm].Info.Name), MessageType.Hint);
-                foreach (SConnection con in Connection.Observers)
-                    con.ReceiveChat(string.Format(con.Language.ChargeExpire, Magics[MagicType.BladeStorm].Info.Name), MessageType.Hint);
-            }
+            // 修改：充能型技能（烈火/翔空/莲月）充能后一直保留，直到攻击释放才消耗（取消 12 秒自动过期）
 
             if (Dead && SEnvir.Now >= RevivalTime)
                 TownRevive();
@@ -14241,7 +14215,7 @@ namespace Zircon.Server.Models
                     Enqueue(new S.MagicToggle { Magic = MagicType.Slaying, CanUse = CanPowerAttack = true });
             }
 
-            if (attackMagic == MagicType.Thrusting && Magics.TryGetValue(attackMagic, out magic) && Level >= magic.Info.NeedLevel1)
+            if (validMagic == MagicType.None && Character.CanThrusting && (attackMagic == MagicType.None || attackMagic == MagicType.Thrusting) && Magics.TryGetValue(MagicType.Thrusting, out magic) && Level >= magic.Info.NeedLevel1)
             {
                 int cost = magic.Cost;
 
