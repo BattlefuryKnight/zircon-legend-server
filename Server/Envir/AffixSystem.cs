@@ -642,7 +642,7 @@ namespace Server.Envir
                         if (amount == 0) continue;
                         if (!Enum.TryParse(effect.Stat, out Stat stat)) continue;
 
-                        percentMap[stat] += amount;
+                        percentMap[stat] = percentMap.GetValueOrDefault(stat) + amount;
                     }
                 }
             }

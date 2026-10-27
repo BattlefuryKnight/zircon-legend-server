@@ -557,6 +557,8 @@
     async function loadMeta() {
       try {
         meta = await api.get('/api/game/affixes/meta');
+        // 属性列表按中文标题排序，便于查找（如 生命窃取/生命恢复）
+        meta.stats.sort((a, b) => (a.title || a.value).localeCompare(b.title || b.value, 'zh'));
         const condSel = document.getElementById('f_conditionType');
         condSel.innerHTML = meta.conditions.map(c => `<option value="${c.value}">${escapeHtml(c.title)}</option>`).join('');
         document.getElementById('typeCheckList').innerHTML = meta.itemTypes.map(t =>
@@ -666,11 +668,23 @@
       });
     }
 
+    function filterStatOptions(input) {
+      const q = (input.value || '').trim().toLowerCase();
+      const sel = input.parentElement.querySelector('.e-stat');
+      if (!sel) return;
+      Array.from(sel.options).forEach(o => {
+        const text = (o.textContent || '').toLowerCase();
+        o.style.display = (!q || text.includes(q)) ? '' : 'none';
+      });
+    }
     function addEffectRow(stat, useParam, fixedAmount, paramIndex) {
       const div = document.createElement('div');
       div.className = 'effect-row';
       div.innerHTML = `
-        <select class="form-select e-stat">${meta.stats.map(s => `<option value="${s.value}" ${s.value === stat ? 'selected' : ''}>${escapeHtml(s.title)} (${s.value})</option>`).join('')}</select>
+        <span style="display:inline-flex;gap:0.25rem;align-items:center;">
+          <input type="text" class="form-control e-stat-filter" placeholder="搜索属性" style="width:100px;" oninput="filterStatOptions(this)">
+                  <select class="form-select e-stat">${meta.stats.map(s => `<option value="${s.value}" ${s.value === stat ? 'selected' : ''}>${escapeHtml(s.title)} (${s.value})</option>`).join('')}</select>
+        </span>
         <label style="display:flex;align-items:center;gap:0.25rem;white-space:nowrap;"><input type="checkbox" class="e-useparam" ${useParam ? 'checked' : ''} onchange="this.closest('.effect-row').querySelector('.e-fixed').style.display = this.checked ? 'none' : ''; this.closest('.effect-row').querySelector('.e-pindex').style.display = this.checked ? '' : 'none';"> 引用占位符</label>
         <input type="number" class="form-control e-pindex" placeholder="占位符索引" value="${paramIndex !== undefined ? paramIndex : 0}" style="width:130px; ${useParam ? '' : 'display:none;'}">
         <input type="number" class="form-control e-fixed" placeholder="固定数值" value="${fixedAmount !== undefined ? fixedAmount : 0}" style="width:130px; ${useParam ? 'display:none;' : ''}">
