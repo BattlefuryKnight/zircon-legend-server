@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -3121,26 +3121,29 @@ namespace Zircon.Server.Models
                     //}
                     //else if (drop.Item.Effect == ItemEffect.Gold && amount > 10000000)
                     //{
-                    //    item = SEnvir.CreateDropItem(drop.Item);
+                    //    item = SEnvir.CreateDropItem(drop.Item, rollRarity: true);
 
                     //    item.Count = Math.Min(drop.Item.StackSize, amount);
                     //    amount -= item.Count;
                     //}
                     //else if (drop.Item.Effect == ItemEffect.Gold && amount > 1000000)
                     //{
-                    //    item = SEnvir.CreateDropItem(drop.Item);
+                    //    item = SEnvir.CreateDropItem(drop.Item, rollRarity: true);
 
                     //    item.Count = Math.Min(drop.Item.StackSize, amount);
                     //    amount -= item.Count;
                     //}
                     //else
                     {
-                        item = SEnvir.CreateDropItem(drop.Item);
+                        item = SEnvir.CreateDropItem(drop.Item, rollRarity: true);
 
                         item.Count = Math.Min(drop.Item.StackSize, amount);
                         amount -= item.Count;
                     }
                     
+
+                    // 暗黑风格词条：掉落装备时按概率 roll 词条
+                    AffixSystem.RollAffixes(item);
 
                     item.IsTemporary = true; //REMOVE ON Gain
 
@@ -3155,7 +3158,7 @@ namespace Zircon.Server.Models
                         if (drops == null)
                             drops = new List<UserItem>();
 
-                        if (item.Info.Rarity != Rarity.Common)
+                        if (item.Rarity != Rarity.Common)
                         {
                             owner.Connection.ReceiveChat(string.Format(owner.Connection.Language.HarvestRare, MonsterInfo.MonsterName), MessageType.System);
 

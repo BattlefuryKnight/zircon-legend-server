@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>词条概率配置 - 皓石传奇三管理后台</title>
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .form-input, .form-select {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .form-input[readonly] {
+      background: var(--bg-secondary);
+      cursor: not-allowed;
+    }
+    .form-select {
+      min-width: 150px;
+    }
+    textarea.form-input {
+      resize: vertical;
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color);
+    }
+    .pagination button {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+    }
+    .pagination button:hover:not(:disabled) {
+      background: var(--bg-primary);
+      border-color: var(--primary);
+    }
+    .pagination button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .pagination button.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+    .pagination span {
+      color: var(--text-tertiary);
+      font-size: 0.875rem;
+    }
+    .item-type {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .item-type.weapon { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    .item-type.armour { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+    .item-type.helmet { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+    .item-type.necklace { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
+    .item-type.bracelet { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .item-type.ring { background: rgba(234, 179, 8, 0.2); color: #eab308; }
+    .item-type.potion, .item-type.consumable { background: rgba(14, 165, 233, 0.2); color: #0ea5e9; }
+    .item-type.default { background: rgba(107, 114, 128, 0.2); color: #6b7280; }
+
+    .action-btns {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .btn-icon {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1000;
+    }
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+    }
+    .modal-content {
+      position: relative;
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+    .modal-content.modal-large {
+      max-width: 800px;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .modal-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+      line-height: 1;
+    }
+    .modal-close:hover {
+      color: var(--text-primary);
+    }
+    .modal-body {
+      padding: 1.5rem;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border-color);
+    }
+
+    /* Form styles */
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    .form-grid {
+      display: grid;
+      gap: 1.5rem;
+    }
+    .form-section {
+      background: var(--bg-tertiary);
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    .form-section-title {
+      margin: 0 0 1rem 0;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    .form-row .form-group {
+      margin-bottom: 0.5rem;
+    }
+    .form-row .form-group.full-width {
+      grid-column: span 2;
+    }
+    .checkbox-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .checkbox-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    /* affixes 专用补充 */
+    .form-control { width: 100%; }
+    .form-control, .form-input, .form-select { background: var(--bg-secondary, transparent); color: #fff; }
+    .mono { font-family: Consolas, monospace; }
+    #editModal input[type="text"], #editModal input[type="number"], #editModal select, #editModal textarea { color: #fff; }
+    #editModal input::placeholder, #editModal textarea::placeholder { color: rgba(255, 255, 255, 0.35); }
+    .param-row, .effect-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
+    .param-row input, .effect-row select, .effect-row input { width: auto; }
+    .affix-preview { padding: 0.75rem; border: 1px dashed var(--border-color); border-radius: 6px; color: var(--text-secondary); min-height: 2.5rem; }
+    .badge-on { color: var(--success); }
+    .badge-off { color: var(--error); }
+
+    .form-control, .form-input, .form-select { color: #fff; background: var(--bg-secondary, transparent); }
+    .form-control { width: 100%; }
+    .count-row { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.6rem; }
+    .count-row input { width: 110px; }
+    .hint { color: var(--text-tertiary); font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+        </div>
+        <span class="sidebar-brand">皓石传奇三</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <!-- 主菜单 -->
+        <div class="nav-section">
+          <div class="nav-section-title">主菜单</div>
+          <a href="dashboard.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="9"></rect>
+              <rect x="14" y="3" width="7" height="5"></rect>
+              <rect x="14" y="12" width="7" height="9"></rect>
+              <rect x="3" y="16" width="7" height="5"></rect>
+            </svg>
+            <span>仪表盘</span>
+          </a>
+          <a href="players.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span>玩家管理</span>
+          </a>
+          <a href="accounts.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>账号管理</span>
+          </a>
+          <a href="characters.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="8.5" cy="7" r="4"></circle>
+              <polyline points="17 11 19 13 23 9"></polyline>
+            </svg>
+            <span>角色管理</span>
+          </a>
+        </div>
+
+        <!-- 游戏管理 -->
+        <div class="nav-section">
+          <div class="nav-section-title">游戏管理</div>
+          <a href="items.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+            </svg>
+            <span>物品管理</span>
+          </a>
+          <a href="affixes.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+              <line x1="7" y1="7" x2="7.01" y2="7"></line>
+            </svg>
+            <span>词条管理</span>
+          </a>
+          <a href="affixconfig.html" class="nav-item active">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line>
+            </svg>
+            <span>词条概率配置</span>
+          </a>
+          <a href="drops.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+            <span>掉落表管理</span>
+          </a>
+          <a href="maps.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+              <line x1="8" y1="2" x2="8" y2="18"></line>
+              <line x1="16" y1="6" x2="16" y2="22"></line>
+            </svg>
+            <span>地图管理</span>
+          </a>
+          <a href="monsters.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+              <path d="M19 9v4a7 7 0 0 1-14 0V9"></path>
+              <path d="M12 19v3"></path>
+              <path d="M8 22h8"></path>
+            </svg>
+            <span>怪物管理</span>
+          </a>
+          <a href="npcs.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="5"></circle>
+              <path d="M20 21a8 8 0 1 0-16 0"></path>
+            </svg>
+            <span>NPC管理</span>
+          </a>
+          <a href="magics.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path>
+            </svg>
+            <span>技能管理</span>
+          </a>
+          <a href="classes.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <line x1="10" y1="9" x2="8" y2="9"></line>
+            </svg>
+            <span>职业管理</span>
+          </a>
+        </div>
+
+        <!-- 系统 -->
+        <div class="nav-section">
+          <div class="nav-section-title">系统</div>
+          <a href="logs.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>系统日志</span>
+          </a>
+          <a href="settings.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>设置</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle" onclick="toggleSidebar()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <h1 class="page-title">词条概率配置</h1>
+        </div>
+        <div class="topbar-right">
+          <button class="theme-toggle" onclick="toggleTheme()" data-tooltip="切换主题">
+            <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle></svg>
+            <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          </button>
+          <div class="user-menu" onclick="toggleUserMenu()">
+            <div class="user-avatar" id="userAvatar">A</div>
+            <div class="user-info">
+              <div class="user-name" id="userName">管理员</div>
+              <div class="user-role" id="userRole">SuperAdmin</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="card animate-in">
+          <div class="card-header"><h3 class="card-title">稀有度掉落概率（怪物掉落装备，累积百分比）</h3></div>
+          <div class="card-body">
+            <div class="hint" style="margin-bottom: 0.75rem;">
+              从最高档向下判定。需满足 天工 ≤ 神兵 ≤ 名器 ≤ 稀世 ≤ 精炼 ≤ 100；剩余概率为凡兵。修改后即时生效。
+            </div>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;" id="dropChances">
+              <div class="form-group" style="flex:1;"><label>≥ 精炼 (%)</label><input type="number" id="dc_superior" class="form-control" min="0" max="100"></div>
+              <div class="form-group" style="flex:1;"><label>≥ 稀世 (%)</label><input type="number" id="dc_elite" class="form-control" min="0" max="100"></div>
+              <div class="form-group" style="flex:1;"><label>≥ 名器 (%)</label><input type="number" id="dc_famous" class="form-control" min="0" max="100"></div>
+              <div class="form-group" style="flex:1;"><label>≥ 神兵 (%)</label><input type="number" id="dc_divine" class="form-control" min="0" max="100"></div>
+              <div class="form-group" style="flex:1;"><label>≥ 天工 (%)</label><input type="number" id="dc_heavenly" class="form-control" min="0" max="100"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card animate-in" style="margin-top: 1.25rem;">
+          <div class="card-header"><h3 class="card-title">各稀有度词条概率与数量</h3></div>
+          <div class="card-body">
+            <div class="hint" style="margin-bottom: 0.75rem;">
+              概率 = 掉落时获得词条的几率(%)；数量 = 获得词条时的随机条数范围（下限 0 允许 0 条）。
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead><tr><th>稀有度</th><th>词条概率 (%)</th><th>数量下限</th><th>数量上限</th></tr></thead>
+                <tbody id="countTableBody"></tbody>
+              </table>
+            </div>
+            <div style="margin-top: 1rem; text-align: right;">
+              <button class="btn btn-primary" onclick="saveConfig()">保存配置</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="js/theme.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const rarityOrder = ['Common', 'Superior', 'Elite', 'Famous', 'Divine', 'Heavenly'];
+    let config = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!checkAuth()) { window.location.href = 'index.html'; return; }
+      loadUserInfo();
+      await loadConfig();
+    });
+
+    function loadUserInfo() {
+      const user = getUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.email.split('@')[0];
+        document.getElementById('userRole').textContent = user.identity;
+        document.getElementById('userAvatar').textContent = user.email.charAt(0).toUpperCase();
+      }
+    }
+
+    async function loadConfig() {
+      try {
+        config = await api.get('/api/game/affixconfig');
+        document.getElementById('dc_superior').value = config.dropChances.superior;
+        document.getElementById('dc_elite').value = config.dropChances.elite;
+        document.getElementById('dc_famous').value = config.dropChances.famous;
+        document.getElementById('dc_divine').value = config.dropChances.divine;
+        document.getElementById('dc_heavenly').value = config.dropChances.heavenly;
+
+        const titleMap = {};
+        (config.affixCounts || []).forEach(r => titleMap[r.rarity] = r.title);
+        document.getElementById('countTableBody').innerHTML = rarityOrder.map(r => {
+          const row = (config.affixCounts || []).find(x => x.rarity === r) || { chance: 100, min: 0, max: 0 };
+          return `<tr>
+            <td><b>${titleMap[r] || r}</b> <span class="hint">${r}</span></td>
+            <td><input type="number" class="form-control ac-chance" data-r="${r}" value="${row.chance}" min="0" max="100" style="width:110px;"></td>
+            <td><input type="number" class="form-control ac-min" data-r="${r}" value="${row.min}" min="0" max="10" style="width:110px;"></td>
+            <td><input type="number" class="form-control ac-max" data-r="${r}" value="${row.max}" min="0" max="10" style="width:110px;"></td>
+          </tr>`;
+        }).join('');
+      } catch (e) {
+        alert('加载失败: ' + e.message);
+      }
+    }
+
+    async function saveConfig() {
+      const body = {
+        dropChances: {
+          superior: parseInt(document.getElementById('dc_superior').value) || 0,
+          elite: parseInt(document.getElementById('dc_elite').value) || 0,
+          famous: parseInt(document.getElementById('dc_famous').value) || 0,
+          divine: parseInt(document.getElementById('dc_divine').value) || 0,
+          heavenly: parseInt(document.getElementById('dc_heavenly').value) || 0,
+        },
+        affixCounts: rarityOrder.map(r => ({
+          rarity: r,
+          chance: parseInt(document.querySelector(`.ac-chance[data-r="${r}"]`).value) || 0,
+          min: parseInt(document.querySelector(`.ac-min[data-r="${r}"]`).value) || 0,
+          max: parseInt(document.querySelector(`.ac-max[data-r="${r}"]`).value) || 0,
+        })),
+      };
+      try {
+        const res = await api.put('/api/game/affixconfig', body);
+        alert(res.message || '保存成功');
+      } catch (error) {
+        alert('保存失败: ' + error.message);
+      }
+    }
+  </script>
+</body>
+</html>

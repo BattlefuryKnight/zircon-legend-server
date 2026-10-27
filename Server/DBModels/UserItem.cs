@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Linq;
 using System.Drawing;
 using Library;
 using Library.SystemModels;
@@ -309,10 +310,64 @@ namespace Server.DBModels
         }
         private TimeSpan _ExpireTime;
 
+        /// <summary>
+        /// 词条命名（暗黑风格前缀名，如"嗜血之屠龙刀"）。由词条系统在 roll/重建时维护，空 = 使用原始名称
+        /// </summary>
+        public string AffixName
+        {
+            get { return _AffixName; }
+            set
+            {
+                if (_AffixName == value) return;
+
+                var oldValue = _AffixName;
+                _AffixName = value;
+
+                OnChanged(oldValue, value, "AffixName");
+            }
+        }
+        private string _AffixName;
+
         
         
         [Association("AddedStats", true)]
         public DBBindingList<UserItemStat> AddedStats { get; set; }
+
+        /// <summary>
+        /// 实例稀有度（掉落时随机 roll）：0 = 未设置（旧数据，使用模板稀有度），1~3 = 实际稀有度。
+        /// 旧存档默认 0，完全兼容。
+        /// </summary>
+        public byte RarityValue
+        {
+            get { return _RarityValue; }
+            set
+            {
+                if (_RarityValue == value) return;
+
+                var oldValue = _RarityValue;
+                _RarityValue = value;
+
+                OnChanged(oldValue, value, "RarityValue");
+            }
+        }
+        private byte _RarityValue;
+
+        /// <summary>
+        /// 物品实际稀有度：实例已设置则用实例值，否则回退模板稀有度
+        /// </summary>
+        [IgnoreProperty]
+        public Rarity Rarity
+        {
+            get
+            {
+                if (RarityValue > 0) return (Rarity)(RarityValue - 1);
+
+                return Info == null ? Rarity.Common : Info.Rarity;
+            }
+        }
+
+        [Association("Affixes", true)]
+        public DBBindingList<UserItemAffix> Affixes { get; set; }
 
         [IgnoreProperty]
         public int Weight
@@ -512,8 +567,41 @@ namespace Server.DBModels
 
                 Flags = Flags,
 
+                AffixName = string.IsNullOrEmpty(AffixName) ? null : AffixName,
+                AffixTexts = Affixes == null ? null : Affixes
+                    .Where(x => x != null && x.Affix != null && !string.IsNullOrEmpty(x.DisplayText))
+                    .Select(x => x.DisplayText)
+                    .ToList(),
+                AffixStats = GetAffixStats(),
+                CustomRarity = EncodeRarityValue(),
+
                 ExpireTime =  ExpireTime,
             };
+        }
+
+        /// <summary>
+        /// 词条贡献的属性汇总（StatSource.Affix 属性行），用于客户端展示时从基础属性中排除
+        /// </summary>
+        /// <summary>实际稀有度编码：0=未设置，1~3=Rarity+1</summary>
+        private byte EncodeRarityValue()
+        {
+            return (byte)((byte)Rarity + 1);
+        }
+
+        private Stats GetAffixStats()
+        {
+            var result = new Stats();
+
+            if (AddedStats == null) return result;
+
+            foreach (UserItemStat stat in AddedStats)
+            {
+                if (stat == null || stat.StatSource != StatSource.Affix) continue;
+
+                result[stat.Stat] += stat.Amount;
+            }
+
+            return result;
         }
 
         public long Price(long count)
@@ -562,7 +650,7 @@ namespace Server.DBModels
         {
             if ((Flags & UserItemFlags.Worthless) == UserItemFlags.Worthless || (Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
 
-            switch (Info.Rarity)
+            switch (Rarity)
             {
                 case Rarity.Common:
                     if (Info.RequiredAmount <= 15) return false;
@@ -591,7 +679,7 @@ namespace Server.DBModels
         }
         public int FragmentCost()
         {
-            switch (Info.Rarity)
+            switch (Rarity)
             {
                 case Rarity.Common:
                     switch (Info.ItemType)
@@ -634,6 +722,9 @@ namespace Server.DBModels
                             return 0;
                     }
                 case Rarity.Elite:
+                    case Rarity.Famous:
+                    case Rarity.Divine:
+                    case Rarity.Heavenly:
                     switch (Info.ItemType)
                     {
                         case ItemType.Weapon:
@@ -656,7 +747,7 @@ namespace Server.DBModels
         }
         public int FragmentCount()
         {
-            switch (Info.Rarity)
+            switch (Rarity)
             {
                 case Rarity.Common:
                     switch (Info.ItemType)
@@ -707,6 +798,9 @@ namespace Server.DBModels
                             return 0;
                     }
                 case Rarity.Elite:
+                    case Rarity.Famous:
+                    case Rarity.Divine:
+                    case Rarity.Heavenly:
                     switch (Info.ItemType)
                     {
                         case ItemType.Armour:

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Security.Cryptography;
 using Library;
@@ -252,8 +252,32 @@ namespace Server.Envir
         public static int 技能低等级经验倍率 { get; set; } = 1;
         public static int CompanionRate { get; set; }
         public static int Boss掉落倍率 { get; set; } = 0;
+        public static int 装备掉落精炼概率 { get; set; } = 20;
+        public static int 装备掉落稀世概率 { get; set; } = 5;
+        public static int 装备掉落名器概率 { get; set; } = 1;
+        public static int 装备掉落神兵概率 { get; set; } = 0;
+        public static int 装备掉落天工概率 { get; set; } = 0;
         public static int 技能高等级经验倍率 { get; set; } = 100;
 
+        [ConfigSection("Affix")]
+        public static int 词条概率凡兵 { get; set; } = 50;
+        public static int 词条数量凡兵最小 { get; set; } = 1;
+        public static int 词条数量凡兵最大 { get; set; } = 1;
+        public static int 词条概率精炼 { get; set; } = 100;
+        public static int 词条数量精炼最小 { get; set; } = 1;
+        public static int 词条数量精炼最大 { get; set; } = 2;
+        public static int 词条概率稀世 { get; set; } = 100;
+        public static int 词条数量稀世最小 { get; set; } = 1;
+        public static int 词条数量稀世最大 { get; set; } = 2;
+        public static int 词条概率名器 { get; set; } = 100;
+        public static int 词条数量名器最小 { get; set; } = 2;
+        public static int 词条数量名器最大 { get; set; } = 3;
+        public static int 词条概率神兵 { get; set; } = 100;
+        public static int 词条数量神兵最小 { get; set; } = 2;
+        public static int 词条数量神兵最大 { get; set; } = 4;
+        public static int 词条概率天工 { get; set; } = 100;
+        public static int 词条数量天工最小 { get; set; } = 3;
+        public static int 词条数量天工最大 { get; set; } = 4;
         [ConfigSection("WebApi")]
         public static bool WebApiEnabled { get; set; } = true;
         public static int WebApiPort { get; set; } = 7080;

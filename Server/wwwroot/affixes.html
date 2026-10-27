@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>词条管理 - 皓石传奇三管理后台</title>
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .form-input, .form-select {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .form-input[readonly] {
+      background: var(--bg-secondary);
+      cursor: not-allowed;
+    }
+    .form-select {
+      min-width: 150px;
+    }
+    textarea.form-input {
+      resize: vertical;
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color);
+    }
+    .pagination button {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+    }
+    .pagination button:hover:not(:disabled) {
+      background: var(--bg-primary);
+      border-color: var(--primary);
+    }
+    .pagination button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .pagination button.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+    .pagination span {
+      color: var(--text-tertiary);
+      font-size: 0.875rem;
+    }
+    .item-type {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .item-type.weapon { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    .item-type.armour { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+    .item-type.helmet { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+    .item-type.necklace { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
+    .item-type.bracelet { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .item-type.ring { background: rgba(234, 179, 8, 0.2); color: #eab308; }
+    .item-type.potion, .item-type.consumable { background: rgba(14, 165, 233, 0.2); color: #0ea5e9; }
+    .item-type.default { background: rgba(107, 114, 128, 0.2); color: #6b7280; }
+
+    .action-btns {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .btn-icon {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1000;
+    }
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+    }
+    .modal-content {
+      position: relative;
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+    .modal-content.modal-large {
+      max-width: 800px;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .modal-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+      line-height: 1;
+    }
+    .modal-close:hover {
+      color: var(--text-primary);
+    }
+    .modal-body {
+      padding: 1.5rem;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border-color);
+    }
+
+    /* Form styles */
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    .form-grid {
+      display: grid;
+      gap: 1.5rem;
+    }
+    .form-section {
+      background: var(--bg-tertiary);
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    .form-section-title {
+      margin: 0 0 1rem 0;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    .form-row .form-group {
+      margin-bottom: 0.5rem;
+    }
+    .form-row .form-group.full-width {
+      grid-column: span 2;
+    }
+    .checkbox-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .checkbox-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    /* affixes 专用补充 */
+    .form-control { width: 100%; }
+    .form-control, .form-input, .form-select { background: var(--bg-secondary, transparent); color: #fff; }
+    .mono { font-family: Consolas, monospace; }
+    #editModal input[type="text"], #editModal input[type="number"], #editModal select, #editModal textarea { color: #fff; }
+    #editModal input::placeholder, #editModal textarea::placeholder { color: rgba(255, 255, 255, 0.35); }
+    .param-row, .effect-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
+    .param-row input, .effect-row select, .effect-row input { width: auto; }
+    .affix-preview { padding: 0.75rem; border: 1px dashed var(--border-color); border-radius: 6px; color: var(--text-secondary); min-height: 2.5rem; }
+    .badge-on { color: var(--success); }
+    .badge-off { color: var(--error); }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+        </div>
+        <span class="sidebar-brand">皓石传奇三</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <!-- 主菜单 -->
+        <div class="nav-section">
+          <div class="nav-section-title">主菜单</div>
+          <a href="dashboard.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="9"></rect>
+              <rect x="14" y="3" width="7" height="5"></rect>
+              <rect x="14" y="12" width="7" height="9"></rect>
+              <rect x="3" y="16" width="7" height="5"></rect>
+            </svg>
+            <span>仪表盘</span>
+          </a>
+          <a href="players.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span>玩家管理</span>
+          </a>
+          <a href="accounts.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>账号管理</span>
+          </a>
+          <a href="characters.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="8.5" cy="7" r="4"></circle>
+              <polyline points="17 11 19 13 23 9"></polyline>
+            </svg>
+            <span>角色管理</span>
+          </a>
+        </div>
+
+        <!-- 游戏管理 -->
+        <div class="nav-section">
+          <div class="nav-section-title">游戏管理</div>
+          <a href="items.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+            </svg>
+            <span>物品管理</span>
+          </a>
+          <a href="affixes.html" class="nav-item active">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+              <line x1="7" y1="7" x2="7.01" y2="7"></line>
+            </svg>
+            <span>词条管理</span>
+          </a>
+          <a href="affixconfig.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line>
+            </svg>
+            <span>词条概率配置</span>
+          </a>
+          <a href="drops.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+            <span>掉落表管理</span>
+          </a>
+          <a href="maps.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+              <line x1="8" y1="2" x2="8" y2="18"></line>
+              <line x1="16" y1="6" x2="16" y2="22"></line>
+            </svg>
+            <span>地图管理</span>
+          </a>
+          <a href="monsters.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+              <path d="M19 9v4a7 7 0 0 1-14 0V9"></path>
+              <path d="M12 19v3"></path>
+              <path d="M8 22h8"></path>
+            </svg>
+            <span>怪物管理</span>
+          </a>
+          <a href="npcs.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="5"></circle>
+              <path d="M20 21a8 8 0 1 0-16 0"></path>
+            </svg>
+            <span>NPC管理</span>
+          </a>
+          <a href="magics.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path>
+            </svg>
+            <span>技能管理</span>
+          </a>
+          <a href="classes.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <line x1="10" y1="9" x2="8" y2="9"></line>
+            </svg>
+            <span>职业管理</span>
+          </a>
+        </div>
+
+        <!-- 系统 -->
+        <div class="nav-section">
+          <div class="nav-section-title">系统</div>
+          <a href="logs.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>系统日志</span>
+          </a>
+          <a href="settings.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>设置</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle" onclick="toggleSidebar()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <h1 class="page-title">词条管理</h1>
+        </div>
+        <div class="topbar-right">
+          <button class="theme-toggle" onclick="toggleTheme()" data-tooltip="切换主题">
+            <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+            </svg>
+            <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          <div class="user-menu" onclick="toggleUserMenu()">
+            <div class="user-avatar" id="userAvatar">A</div>
+            <div class="user-info">
+              <div class="user-name" id="userName">管理员</div>
+              <div class="user-role" id="userRole">SuperAdmin</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="card animate-in">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 class="card-title">装备词条配置</h3>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <input type="text" id="searchInput" class="form-control" placeholder="搜索词条名称" style="width: 200px;" onkeydown="if(event.key==='Enter') loadAffixes(1)">
+              <button class="btn btn-secondary btn-sm" onclick="loadAffixes(1)">搜索</button>
+              <button class="btn btn-primary btn-sm" onclick="showEditModal(null)">
+                + 新增词条
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.75rem;">
+              共 <span id="totalCount">0</span> 条词条。怪物掉落装备时按 <b>权重</b> 随机附加词条；删除词条会自动从已有装备中移除。
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>名称</th>
+                    <th>模板</th>
+                    <th>效果</th>
+                    <th>条件</th>
+                    <th>适用类型</th>
+                    <th>等级</th>
+                    <th>权重</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="affixTableBody">
+                  <tr><td colspan="10" style="text-align: center; color: var(--text-tertiary);">加载中...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="pagination" id="pagination"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 编辑弹窗 -->
+  <div class="modal" id="editModal">
+    <div class="modal-backdrop" onclick="closeEditModal()"></div>
+    <div class="modal-content modal-large">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">新增词条</h3>
+        <button class="modal-close" onclick="closeEditModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>词条名称 *</label>
+          <input type="text" id="f_name" class="form-control" placeholder="如：嗜血">
+        </div>
+        <div class="form-group">
+          <label>显示模板 *（{0} {1} ... 为随机数值占位符）</label>
+          <input type="text" id="f_template" class="form-control" placeholder="血量低于{0}%时，暴击率增加{1}%" oninput="updatePreview()">
+          <div class="affix-preview" id="templatePreview">预览区域</div>
+        </div>
+
+        <div class="form-group">
+          <label>随机参数（占位符取值范围）</label>
+          <div id="paramList"></div>
+          <button class="btn btn-secondary btn-sm" onclick="addParamRow()">+ 添加参数</button>
+        </div>
+
+        <div class="form-group">
+          <label>属性效果</label>
+          <div id="effectList"></div>
+          <button class="btn btn-secondary btn-sm" onclick="addEffectRow()">+ 添加效果</button>
+        </div>
+
+        <div class="form-group">
+          <label>触发条件</label>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <select id="f_conditionType" class="form-select" style="width: 240px;" onchange="updatePreview()"></select>
+            <input type="number" id="f_conditionParamIndex" class="form-control" placeholder="条件参数占位符索引" style="width: 180px;" value="-1" title="引用哪个占位符作为条件值，-1 表示不使用">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>适用装备类型（不选 = 全部装备）</label>
+          <div id="typeCheckList" style="display: flex; flex-wrap: wrap; gap: 0.75rem;"></div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+          <div class="form-group" style="flex: 1;">
+            <label>装备最小等级（-1 不限）</label>
+            <input type="number" id="f_minLevel" class="form-control" value="-1">
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label>装备最大等级（-1 不限）</label>
+            <input type="number" id="f_maxLevel" class="form-control" value="-1">
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label>出现权重</label>
+            <input type="number" id="f_weight" class="form-control" value="100">
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label>启用</label>
+            <select id="f_enabled" class="form-select">
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeEditModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveAffix()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/theme.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    let currentPage = 1;
+    let totalPages = 1;
+    const pageSize = 50;
+    let meta = { stats: [], itemTypes: [], conditions: [] };
+    let editingIndex = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!checkAuth()) { window.location.href = 'index.html'; return; }
+      loadUserInfo();
+      await loadMeta();
+      await loadAffixes(1);
+    });
+
+    function loadUserInfo() {
+      const user = getUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.email.split('@')[0];
+        document.getElementById('userRole').textContent = user.identity;
+        document.getElementById('userAvatar').textContent = user.email.charAt(0).toUpperCase();
+      }
+    }
+
+    async function loadMeta() {
+      try {
+        meta = await api.get('/api/game/affixes/meta');
+        const condSel = document.getElementById('f_conditionType');
+        condSel.innerHTML = meta.conditions.map(c => `<option value="${c.value}">${escapeHtml(c.title)}</option>`).join('');
+        document.getElementById('typeCheckList').innerHTML = meta.itemTypes.map(t =>
+          `<label style="display:flex;align-items:center;gap:0.25rem;"><input type="checkbox" class="type-check" value="${t.value}"> ${escapeHtml(t.title)}</label>`).join('');
+      } catch (e) { console.error('加载元数据失败', e); }
+    }
+
+    async function loadAffixes(page) {
+      currentPage = page || 1;
+      try {
+        const search = document.getElementById('searchInput').value.trim();
+        const data = await api.get(`/api/game/affixes?page=${currentPage}&pageSize=${pageSize}` + (search ? `&search=${encodeURIComponent(search)}` : ''));
+        totalPages = data.totalPages || 1;
+        document.getElementById('totalCount').textContent = data.total || 0;
+        renderTable(data.affixes || []);
+        renderPagination();
+      } catch (error) {
+        document.getElementById('affixTableBody').innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--error);">加载失败: ${error.message}</td></tr>`;
+      }
+    }
+
+    function renderTable(affixes) {
+      if (affixes.length === 0) {
+        document.getElementById('affixTableBody').innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-tertiary);">暂无词条，点击右上角新增</td></tr>';
+        return;
+      }
+      document.getElementById('affixTableBody').innerHTML = affixes.map(a => {
+        const effects = (a.effects || []).map(e => statTitle(e.stat) + (e.useParam ? `={${e.paramIndex}}` : `=${e.fixedAmount}`)).join('、') || '-';
+        const cond = conditionTitle(a.conditionType) + (a.conditionType !== 'None' && a.conditionParamIndex >= 0 ? `({${a.conditionParamIndex}})` : '');
+        const types = (a.applicableTypes || []).map(t => typeTitle(t)).join('、') || '全部装备';
+        const levels = (a.minLevel < 0 && a.maxLevel < 0) ? '不限' : `${a.minLevel < 0 ? 0 : a.minLevel} ~ ${a.maxLevel < 0 ? '∞' : a.maxLevel}`;
+        return `<tr>
+          <td>${a.index}</td>
+          <td><b>${escapeHtml(a.name)}</b></td>
+          <td class="mono" style="max-width:280px;">${escapeHtml(a.template)}</td>
+          <td>${escapeHtml(effects)}</td>
+          <td>${escapeHtml(cond)}</td>
+          <td>${escapeHtml(types)}</td>
+          <td>${levels}</td>
+          <td>${a.weight}</td>
+          <td class="${a.enabled ? 'badge-on' : 'badge-off'}">${a.enabled ? '启用' : '停用'}</td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick='showEditModal(${JSON.stringify(a)})'>编辑</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteAffix(${a.index}, '${escapeHtml(a.name)}')">删除</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderPagination() {
+      const el = document.getElementById('pagination');
+      let html = '';
+      for (let i = 1; i <= totalPages; i++) html += `<button class="${i === currentPage ? 'active' : ''}" onclick="loadAffixes(${i})">${i}</button>`;
+      el.innerHTML = html;
+    }
+
+    function statTitle(v) { const s = meta.stats.find(x => x.value === v); return s ? s.title : v; }
+    function typeTitle(v) { const t = meta.itemTypes.find(x => x.value === v); return t ? t.title : v; }
+    function conditionTitle(v) { const c = meta.conditions.find(x => x.value === v); return c ? c.title : v; }
+
+    // ---------- 编辑弹窗 ----------
+    function showEditModal(affix) {
+      editingIndex = affix ? affix.index : null;
+      document.getElementById('modalTitle').textContent = affix ? `编辑词条 #${affix.index}` : '新增词条';
+      document.getElementById('f_name').value = affix ? affix.name : '';
+      document.getElementById('f_template').value = affix ? affix.template : '';
+      document.getElementById('f_conditionType').value = affix ? affix.conditionType : 'None';
+      document.getElementById('f_conditionParamIndex').value = affix ? affix.conditionParamIndex : -1;
+      document.getElementById('f_minLevel').value = affix ? affix.minLevel : -1;
+      document.getElementById('f_maxLevel').value = affix ? affix.maxLevel : -1;
+      document.getElementById('f_weight').value = affix ? affix.weight : 100;
+      document.getElementById('f_enabled').value = affix ? String(affix.enabled) : 'true';
+      document.querySelectorAll('.type-check').forEach(cb => {
+        cb.checked = affix && affix.applicableTypes ? affix.applicableTypes.includes(cb.value) : false;
+      });
+
+      document.getElementById('paramList').innerHTML = '';
+      (affix && affix.params ? affix.params : []).forEach(p => addParamRow(p.min, p.max, p.isPercent));
+      document.getElementById('effectList').innerHTML = '';
+      (affix && affix.effects ? affix.effects : []).forEach(e => addEffectRow(e.stat, e.useParam, e.fixedAmount, e.paramIndex));
+
+      updatePreview();
+      document.getElementById('editModal').classList.add('show');
+    }
+
+    function closeEditModal() { document.getElementById('editModal').classList.remove('show'); }
+
+    function addParamRow(min, max, isPercent) {
+      const div = document.createElement('div');
+      div.className = 'param-row';
+      div.innerHTML = `
+        <span style="color:var(--text-secondary);white-space:nowrap;">占位符 {${document.querySelectorAll('#paramList .param-row').length}}:</span>
+        <input type="number" class="form-control p-min" placeholder="最小值" value="${min !== undefined ? min : 0}" style="width:110px;">
+        <span>~</span>
+        <input type="number" class="form-control p-max" placeholder="最大值" value="${max !== undefined ? max : 0}" style="width:110px;">
+        <label style="display:flex;align-items:center;gap:0.25rem;white-space:nowrap;"><input type="checkbox" class="p-percent" onchange="updatePreview()"> 百分比</label>
+        <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove(); updatePreview();">删除</button>`;
+      div.querySelectorAll('input').forEach(inp => inp.addEventListener('input', updatePreview));
+      document.getElementById('paramList').appendChild(div);
+      div.querySelector('.p-percent').checked = isPercent !== false;
+      renumberParams();
+    }
+
+    function renumberParams() {
+      document.querySelectorAll('#paramList .param-row').forEach((row, i) => {
+        row.querySelector('span').textContent = `占位符 {${i}}:`;
+      });
+    }
+
+    function addEffectRow(stat, useParam, fixedAmount, paramIndex) {
+      const div = document.createElement('div');
+      div.className = 'effect-row';
+      div.innerHTML = `
+        <select class="form-select e-stat">${meta.stats.map(s => `<option value="${s.value}" ${s.value === stat ? 'selected' : ''}>${escapeHtml(s.title)} (${s.value})</option>`).join('')}</select>
+        <label style="display:flex;align-items:center;gap:0.25rem;white-space:nowrap;"><input type="checkbox" class="e-useparam" ${useParam ? 'checked' : ''} onchange="this.closest('.effect-row').querySelector('.e-fixed').style.display = this.checked ? 'none' : ''; this.closest('.effect-row').querySelector('.e-pindex').style.display = this.checked ? '' : 'none';"> 引用占位符</label>
+        <input type="number" class="form-control e-pindex" placeholder="占位符索引" value="${paramIndex !== undefined ? paramIndex : 0}" style="width:130px; ${useParam ? '' : 'display:none;'}">
+        <input type="number" class="form-control e-fixed" placeholder="固定数值" value="${fixedAmount !== undefined ? fixedAmount : 0}" style="width:130px; ${useParam ? 'display:none;' : ''}">
+        <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">删除</button>`;
+      document.getElementById('effectList').appendChild(div);
+    }
+
+    function updatePreview() {
+      const template = document.getElementById('f_template').value || '预览区域';
+      const values = [];
+      document.querySelectorAll('#paramList .param-row').forEach(row => {
+        const min = parseInt(row.querySelector('.p-min').value) || 0;
+        const max = parseInt(row.querySelector('.p-max').value) || 0;
+        values.push(min === max ? min : Math.floor((min + max) / 2));
+      });
+      let preview;
+      try { preview = template.replace(/\{(\d+)\}/g, (m, i) => values[+i] !== undefined ? values[+i] : m); }
+      catch { preview = template; }
+      document.getElementById('templatePreview').textContent = '效果示例：' + preview;
+    }
+
+    async function saveAffix() {
+      const params = [];
+      document.querySelectorAll('#paramList .param-row').forEach(row => {
+        params.push({ min: parseInt(row.querySelector('.p-min').value) || 0, max: parseInt(row.querySelector('.p-max').value) || 0, isPercent: row.querySelector('.p-percent').checked });
+      });
+      const effects = [];
+      document.querySelectorAll('#effectList .effect-row').forEach(row => {
+        effects.push({
+          stat: row.querySelector('.e-stat').value,
+          useParam: row.querySelector('.e-useparam').checked,
+          fixedAmount: parseInt(row.querySelector('.e-fixed').value) || 0,
+          paramIndex: parseInt(row.querySelector('.e-pindex').value) || 0,
+        });
+      });
+      const body = {
+        name: document.getElementById('f_name').value.trim(),
+        template: document.getElementById('f_template').value.trim(),
+        paramDefs: params,
+        effects: effects,
+        conditionType: document.getElementById('f_conditionType').value,
+        conditionParamIndex: parseInt(document.getElementById('f_conditionParamIndex').value) || -1,
+        applicableTypes: Array.from(document.querySelectorAll('.type-check:checked')).map(cb => cb.value),
+        minLevel: parseInt(document.getElementById('f_minLevel').value) || -1,
+        maxLevel: parseInt(document.getElementById('f_maxLevel').value) || -1,
+        weight: parseInt(document.getElementById('f_weight').value) || 100,
+        enabled: document.getElementById('f_enabled').value === 'true',
+      };
+
+      try {
+        const res = editingIndex === null
+          ? await api.post('/api/game/affixes', body)
+          : await api.put(`/api/game/affixes/${editingIndex}`, body);
+        alert(res.message || '保存成功');
+        closeEditModal();
+        await loadAffixes(currentPage);
+      } catch (error) {
+        alert('保存失败: ' + error.message);
+      }
+    }
+
+    async function deleteAffix(index, name) {
+      if (!confirm(`确定删除词条【${name}】？\n\n该操作会同时从所有已有装备中移除此词条！`)) return;
+      try {
+        const res = await api.delete(`/api/game/affixes/${index}`);
+        alert(res.message || '删除成功');
+        await loadAffixes(currentPage);
+      } catch (error) {
+        alert('删除失败: ' + error.message);
+      }
+    }
+
+    function escapeHtml(text) {
+      if (text === null || text === undefined) return '';
+      return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+  </script>
+</body>
+</html>

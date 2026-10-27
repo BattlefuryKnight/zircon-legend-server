@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using Library;
 using Library.Network;
@@ -207,7 +207,7 @@ namespace Zircon.Server.Models
                         if (!Compare(check.Operator, ob.Equipment[(int)EquipmentSlot.Weapon].Level, check.IntParameter1)) return false;
                         break;
                     case NPCCheckType.WeaponLevelFull:
-                        bool full = SEnvir.GetWeaponLimitLevel(ob.Equipment[(int)EquipmentSlot.Weapon].Info.Rarity) <= ob.Equipment[(int)EquipmentSlot.Weapon].Level;
+                        bool full = SEnvir.GetWeaponLimitLevel(ob.Equipment[(int)EquipmentSlot.Weapon].Rarity) <= ob.Equipment[(int)EquipmentSlot.Weapon].Level;
                         if (!Compare(check.Operator, full ? 1 : 0, check.IntParameter1)) return false;
                         break;
                     case NPCCheckType.WeaponCanRefine:

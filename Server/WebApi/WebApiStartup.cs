@@ -159,6 +159,9 @@ namespace Server.WebApi
             AccountEndpoints.Map(app);
             CharacterEndpoints.Map(app);
             GameDataEndpoints.Map(app);
+            AffixEndpoints.Map(app);
+            DropEndpoints.Map(app);
+            AffixConfigEndpoints.Map(app);
             LogEndpoints.Map(app);
             ConfigEndpoints.Map(app);
 

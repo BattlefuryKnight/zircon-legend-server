@@ -1,4 +1,4 @@
-﻿using Library;
+using Library;
 using Library.Network;
 using Library.Network.ServerPackets;
 using Library.SystemModels;
@@ -229,9 +229,18 @@ namespace Zircon.Server.Models
 
         private readonly HashSet<MonsterObject> _tagClearList = new HashSet<MonsterObject>();
 
+        // 暗黑风格条件词条状态
+        private bool _HasConditionalAffixes;
+        private int _LastAffixHP = -1;
+        private int _LastAffixMP = -1;
+
         public override void Process()
         {
             base.Process();
+
+            // 条件词条：血量/魔法变化时重新评估（RefreshStats 会重算并更新基准值）
+            if (_HasConditionalAffixes && (CurrentHP != _LastAffixHP || CurrentMP != _LastAffixMP))
+                RefreshStats();
 
             // if (LastHitter != null && LastHitter.Node == null) LastHitter = null;
             if (GroupInvitation != null && GroupInvitation.Node == null) GroupInvitation = null;
@@ -3665,7 +3674,7 @@ namespace Zircon.Server.Models
             UserItem weapon = Equipment[(int)EquipmentSlot.Weapon];
             if (weapon != null)
             {
-                int limit_level = SEnvir.GetWeaponLimitLevel(weapon.Info.Rarity);
+                int limit_level = SEnvir.GetWeaponLimitLevel(weapon.Rarity);
 
                 if (weapon.Info.Effect != ItemEffect.PickAxe && (weapon.Flags & UserItemFlags.Refinable) != UserItemFlags.Refinable && (weapon.Flags & UserItemFlags.NonRefinable) != UserItemFlags.NonRefinable && weapon.Level < limit_level && rateEffected)
                 {
@@ -4059,6 +4068,13 @@ namespace Zircon.Server.Models
 
             if (CurrentHP > Stats[Stat.Health]) SetHP(Stats[Stat.Health]);
             if (CurrentMP > Stats[Stat.Mana]) SetMP(Stats[Stat.Mana]);
+
+            // 暗黑风格条件词条：运行时评估（如"血量低于x%时暴击率增加y%"）
+            // 百分比词条（以当前基础属性为基数按百分比加成）
+            AffixSystem.ApplyPercentAffixStats(this);
+            _HasConditionalAffixes = AffixSystem.ApplyConditionalAffixStats(this);
+            _LastAffixHP = CurrentHP;
+            _LastAffixMP = CurrentMP;
 
             if (Spawned && tracking != Stats[Stat.PlayerTracker] + Stats[Stat.BossTracker])
             {
@@ -7606,7 +7622,7 @@ namespace Zircon.Server.Models
                             }
 
 
-                            if (weapon.Level < SEnvir.GetWeaponLimitLevel(weapon.Info.Rarity))
+                            if (weapon.Level < SEnvir.GetWeaponLimitLevel(weapon.Rarity))
                             {
                                 Connection.ReceiveChat("你的武器没达到最高等级.", MessageType.System);
                                 return;
@@ -7677,7 +7693,7 @@ namespace Zircon.Server.Models
                                 return;
                             }
 
-                            if (weapon.Level < SEnvir.GetWeaponLimitLevel(weapon.Info.Rarity))
+                            if (weapon.Level < SEnvir.GetWeaponLimitLevel(weapon.Rarity))
                             {
                                 Connection.ReceiveChat("你的武器没达到最高等级.", MessageType.System);
                                 return;
@@ -7720,7 +7736,7 @@ namespace Zircon.Server.Models
                                 return;
                             }
 
-                            if (weapon.Level < SEnvir.GetWeaponLimitLevel(weapon.Info.Rarity))
+                            if (weapon.Level < SEnvir.GetWeaponLimitLevel(weapon.Rarity))
                             {
                                 Connection.ReceiveChat("你的武器没达到最高等级.", MessageType.System);
                                 return;
@@ -7797,7 +7813,7 @@ namespace Zircon.Server.Models
                                 return;
                             }
 
-                            if (weapon.Level < SEnvir.GetWeaponLimitLevel(weapon.Info.Rarity))
+                            if (weapon.Level < SEnvir.GetWeaponLimitLevel(weapon.Rarity))
                             {
                                 Connection.ReceiveChat("你的武器没达到最高等级.", MessageType.System);
                                 return;
@@ -9123,7 +9139,7 @@ namespace Zircon.Server.Models
                                         if ((item.Item.Info.ItemType == ItemType.Nothing
                                             && item.Item.Info.Effect == ItemEffect.Gold)
                                             || item.Item.AddedStats.Count > 0
-                                            || item.Item.Info.Rarity != Rarity.Common)
+                                            || item.Item.Rarity != Rarity.Common)
                                             listNeedPick.Add(item);
                                         break;
                                 }
@@ -10969,7 +10985,7 @@ namespace Zircon.Server.Models
                 cost += item.FragmentCost();
                 itemCount++;
 
-                if (item.Info.Rarity == Rarity.Common)
+                if (item.Rarity == Rarity.Common)
                     fragmentCount += item.FragmentCount();
                 else
                     fragment2Count += item.FragmentCount();
@@ -11101,7 +11117,7 @@ namespace Zircon.Server.Models
                 default: return;
             }
 
-            if (targetItem.Level >= Globals.AccessoryExperienceList.Count - (2 - (int)targetItem.Info.Rarity) * 2) return;
+            if (targetItem.Level >= Globals.AccessoryExperienceList.Count - (2 - (int)targetItem.Rarity) * 2) return;
 
             bool changed = false;
 
@@ -11155,14 +11171,14 @@ namespace Zircon.Server.Models
 
                 result.Links.Add(link);
 
-                if (targetItem.Level == 1 && targetItem.Info.Rarity == Rarity.Common)
+                if (targetItem.Level == 1 && targetItem.Rarity == Rarity.Common)
                     targetItem.Experience += link.Count * 5;
-                else if (targetItem.Info.Rarity != Rarity.Common)
-                    targetItem.Experience += link.Count * 5 * (int)targetItem.Info.Rarity;
+                else if (targetItem.Rarity != Rarity.Common)
+                    targetItem.Experience += link.Count * 5 * (int)targetItem.Rarity;
                 else
                     targetItem.Experience += link.Count;
 
-                //if (item.Level > 1 && targetItem.Info.Rarity == Rarity.Common)
+                //if (item.Level > 1 && targetItem.Rarity == Rarity.Common)
                 //    targetItem.Experience -= 9;
 
 
@@ -12226,9 +12242,9 @@ namespace Zircon.Server.Models
 
                 items += item.Info.RequiredAmount;
 
-                if (item.Info.Rarity == Rarity.Superior)
+                if (item.Rarity == Rarity.Superior)
                     quality ++;
-                else if (item.Info.Rarity == Rarity.Elite)
+                else if (item.Rarity == Rarity.Elite)
                     quality += 2;
             }
 
@@ -12681,7 +12697,7 @@ namespace Zircon.Server.Models
                 return;
             }
 
-            if (weapon.Level < SEnvir.GetWeaponLimitLevel(weapon.Info.Rarity))
+            if (weapon.Level < SEnvir.GetWeaponLimitLevel(weapon.Rarity))
             {
                 Connection.ReceiveChat("你的武器还没有满级.", MessageType.System);
                 return;
@@ -13147,7 +13163,7 @@ namespace Zircon.Server.Models
                 return;
             }
 
-            if (weapon.Level < SEnvir.GetWeaponLimitLevel(weapon.Info.Rarity))
+            if (weapon.Level < SEnvir.GetWeaponLimitLevel(weapon.Rarity))
             {
                 Connection.ReceiveChat("你的武器还没有满级.", MessageType.System);
                 return;
@@ -13213,7 +13229,7 @@ namespace Zircon.Server.Models
                 return;
             }
 
-            if (weapon.Level < SEnvir.GetWeaponLimitLevel(weapon.Info.Rarity))
+            if (weapon.Level < SEnvir.GetWeaponLimitLevel(weapon.Rarity))
             {
                 Connection.ReceiveChat("你的武器没有满级.", MessageType.System);
                 return;
@@ -13484,7 +13500,7 @@ namespace Zircon.Server.Models
 
             if (!isTemplate)
             {
-                switch (Inventory[p.Template.Slot].Info.Rarity)
+                switch (Inventory[p.Template.Slot].Rarity)
                 {
                     case Rarity.Common:
                         cost = Globals.CommonCraftWeaponPercentCost;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
@@ -638,6 +638,11 @@ namespace Server.Envir
         public static DBCollection<UserItem> UserItemList;
         public static DBCollection<RefineInfo> RefineInfoList;
         public static DBCollection<UserItemStat> UserItemStatsList;
+
+        public static DBCollection<Library.SystemModels.ItemAffixInfo> ItemAffixList;
+        public static DBCollection<Library.SystemModels.DropInfo> DropInfoList;
+
+        public static DBCollection<UserItemAffix> UserItemAffixList;
         public static DBCollection<UserMagic> UserMagicList;
         public static DBCollection<BuffInfo> BuffInfoList;
         public static DBCollection<MonsterInfo> MonsterInfoList;    
@@ -871,6 +876,9 @@ namespace Server.Envir
             AutoPotionLinkList = Session.GetCollection<AutoPotionLink>();
             UserItemList = Session.GetCollection<UserItem>();
             UserItemStatsList = Session.GetCollection<UserItemStat>();
+            ItemAffixList = Session.GetCollection<Library.SystemModels.ItemAffixInfo>();
+            UserItemAffixList = Session.GetCollection<UserItemAffix>();
+            DropInfoList = Session.GetCollection<Library.SystemModels.DropInfo>();
             RefineInfoList = Session.GetCollection<RefineInfo>();
             UserMagicList = Session.GetCollection<UserMagic>();
             BuffInfoList = Session.GetCollection<BuffInfo>();
@@ -951,6 +959,9 @@ namespace Server.Envir
             for (int i = UserQuestTaskList.Count - 1; i >= 0; i--)
                 if (UserQuestTaskList[i].Task == null)
                     UserQuestTaskList[i].Delete();
+
+            // 词条自愈：修复旧版本渲染的词条文本与缺失数值
+            AffixSystem.RepairAllInstances();
 
             foreach (MonsterInfo monster in MonsterInfoList.Binding)
             {
@@ -1389,6 +1400,9 @@ namespace Server.Envir
             BeltLinkList = null;
             UserItemList = null;
             UserItemStatsList = null;
+            ItemAffixList = null;
+            UserItemAffixList = null;
+            DropInfoList = null;
             UserMagicList = null;
             BuffInfoList = null;
             SetInfoList = null;
@@ -2226,7 +2240,7 @@ namespace Server.Envir
 
             return item;
         }
-        public static UserItem CreateDropItem(ItemInfo info, int chance = 15)
+        public static UserItem CreateDropItem(ItemInfo info, int chance = 15, bool rollRarity = false)
         {
             UserItem item = UserItemList.CreateNewObject();
 
@@ -2235,7 +2249,26 @@ namespace Server.Envir
 
             item.Colour = Color.FromArgb(Random.Next(256), Random.Next(256), Random.Next(256));
 
-            if (item.Info.Rarity != Rarity.Common)
+
+            // 怪物掉落装备：全随机稀有度分布（累积概率，可低于模板稀有度；其他途径保持模板稀有度）
+            if (rollRarity && AffixSystem.IsEquipmentType(info.ItemType))
+            {
+                // 从最高档向下判定（P(>=x) 需 >= P(>=x+1)）
+                int roll = Random.Next(100);
+                byte rarity = 0;
+
+                if (roll < Config.装备掉落天工概率) rarity = (byte)Rarity.Heavenly;
+                else if (roll < Config.装备掉落神兵概率) rarity = (byte)Rarity.Divine;
+                else if (roll < Config.装备掉落名器概率) rarity = (byte)Rarity.Famous;
+                else if (roll < Config.装备掉落稀世概率) rarity = (byte)Rarity.Elite;
+                else if (roll < Config.装备掉落精炼概率) rarity = (byte)Rarity.Superior;
+
+                item.RarityValue = (byte)(rarity + 1);
+            }
+            else
+                item.RarityValue = (byte)((byte)info.Rarity + 1);
+
+            if (item.Rarity != Rarity.Common)
                 chance *= 2;
 
             if (Random.Next(chance) == 0)
