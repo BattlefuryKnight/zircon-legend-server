@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Library;
+using S = Library.Network.ServerPackets;
 using Library.SystemModels;
 using Server.DBModels;
 using Server.Envir;
@@ -46,6 +47,8 @@ namespace Server.Envir
             public int Max { get; set; }
             /// <summary>true=按百分比生效（运行时按角色基础属性比例加成），false=按数值生效（直接加固定值）；旧配置默认百分比</summary>
             public bool IsPercent { get; set; } = true;
+            /// <summary>true=该占位符的 roll 值作为词条效果持续时间（秒）</summary>
+            public bool IsDuration { get; set; }
         }
 
         public class AffixEffectDef
@@ -558,6 +561,12 @@ namespace Server.Envir
         /// <summary>
         /// 把满足条件的词条效果加入角色运行时属性（不落库）。在 RefreshStats 末尾调用。
         /// </summary>
+        /// <summary>
+        /// 持续生效型条件词条（血量低于/魔法低于/夜间）评估：
+        /// 已配置 Duration（>0）→ 条件满足且该词条 Buff 不在存活期时触发 Buff（持续配置的时长），
+        ///   Buff 过期移除会触发 RefreshStats 重新评估，条件仍满足则自动重新触发；
+        /// 未配置 Duration（<=0）→ 条件满足期间持续生效（数值直接加成，百分比由 ApplyPercentAffixStats 处理）。
+        /// </summary>
         public static bool ApplyConditionalAffixStats(PlayerObject player)
         {
             bool hasConditional = false;
@@ -572,26 +581,51 @@ namespace Server.Envir
                 {
                     var def = instance.Affix;
                     if (def == null || def.ConditionType == AffixConditionType.None) continue;
+                    if (IsEventCondition(def.ConditionType)) continue;   // 事件型由事件钩子触发
 
                     hasConditional = true;
 
-                    if (!EvaluateCondition(def, ParseValues(instance.Values), player)) continue;
-
                     var values = ParseValues(instance.Values);
-                    foreach (var effect in ParseEffects(def.EffectsJson))
-                    {
-                        if (IsEffectPercent(def, effect)) continue;   // 百分比效果由 ApplyPercentAffixStats 处理
-                        int amount = ResolveEffectAmount(effect, values);
-                        if (amount == 0) continue;
-                        if (!Enum.TryParse(effect.Stat, out Stat stat)) continue;
+                    if (!EvaluateCondition(def, values, player)) continue;
 
-                        player.Stats[stat] += amount;
+                    if (ResolveDurationSeconds(def, values) > 0)
+                    {
+                        // 触发 Buff：存活期不重复；到期后条件仍满足会重新触发
+                        if (player.Buffs.Any(x => x.Type == BuffType.AffixTrigger && x.ItemIndex == def.Index)) continue;
+
+                        ApplyAffixBuff(player, def, values, false);
+                    }
+                    else
+                    {
+                        // 未配置持续时间：条件满足期间持续生效（数值直接加成）
+                        foreach (var effect in ParseEffects(def.EffectsJson))
+                        {
+                            if (IsEffectPercent(def, effect)) continue;   // 百分比由 ApplyPercentAffixStats 处理
+                            int amount = ResolveEffectAmount(effect, values);
+                            if (amount == 0) continue;
+                            if (!Enum.TryParse(effect.Stat, out Stat stat)) continue;
+
+                            player.Stats[stat] += amount;
+                        }
                     }
                 }
             }
 
             return hasConditional;
         }
+        /// <summary>
+        /// 解析词条效果持续时间（秒）：优先取 ParamsJson 中勾选 IsDuration 的占位符 roll 值；
+        /// 未勾选时取固定 Duration 配置。返回值 <=0 由调用方按条件类型处理默认行为。
+        /// </summary>
+        private static int ResolveDurationSeconds(ItemAffixInfo def, int[] values)
+        {
+            var paramDefs = ParseParams(def?.ParamsJson);
+            int idx = paramDefs.FindIndex(p => p.IsDuration);
+            if (idx >= 0 && idx < values.Length) return values[idx];
+
+            return def?.Duration ?? 0;
+        }
+
         /// <summary>效果是否按百分比生效（引用参数的 IsPercent 决定）</summary>
         private static bool IsEffectPercent(ItemAffixInfo def, AffixEffectDef effect)
         {
@@ -631,8 +665,13 @@ namespace Server.Envir
 
                     var values = ParseValues(instance.Values);
 
-                    // 条件词条需条件满足才计入
-                    if (def.ConditionType != AffixConditionType.None && !EvaluateCondition(def, values, player)) continue;
+                    // 条件词条：事件型与已配置时长的持续型由触发 Buff 承载；
+                    // 未配置时长的持续型条件：条件满足期间计入百分比效果
+                    if (def.ConditionType != AffixConditionType.None)
+                    {
+                        if (IsEventCondition(def.ConditionType) || ResolveDurationSeconds(def, values) > 0) continue;
+                        if (!EvaluateCondition(def, values, player)) continue;
+                    }
 
                     foreach (var effect in ParseEffects(def.EffectsJson))
                     {
@@ -649,6 +688,92 @@ namespace Server.Envir
 
             foreach (KeyValuePair<Stat, int> pair in percentMap)
                 player.Stats[pair.Key] += player.Stats[pair.Key] * pair.Value / 100;
+        }
+
+        /// <summary>事件触发型条件（概率触发，不持续生效）</summary>
+        public static bool IsEventCondition(AffixConditionType condition)
+        {
+            return condition >= AffixConditionType.OnAttackMonster;
+        }
+
+        /// <summary>
+        /// 事件触发型词条：按概率 roll 成功后把效果作为临时 Buff（默认 5 秒）应用。
+        /// 百分比效果按触发时玩家当前属性值折算为绝对值。
+        /// </summary>
+        public static void TryTriggerEventAffix(PlayerObject player, AffixConditionType type)
+        {
+            if (player?.Equipment == null) return;
+
+            foreach (UserItem item in player.Equipment)
+            {
+                if (item == null) continue;
+
+                foreach (UserItemAffix instance in item.Affixes)
+                {
+                    var def = instance.Affix;
+                    if (def == null || def.ConditionType != type) continue;
+
+                    var values = ParseValues(instance.Values);
+                    int chance = GetConditionValue(def, values);
+                    if (chance <= 0) continue;
+                    if (SEnvir.Random.Next(100) >= chance) continue;
+
+                    ApplyAffixBuff(player, def, values, true);
+                }
+            }
+        }
+
+        private static void ApplyAffixBuff(PlayerObject player, ItemAffixInfo def, int[] values, bool accumulate)
+        {
+            var stats = new Stats();
+            foreach (var effect in ParseEffects(def.EffectsJson))
+            {
+                if (string.IsNullOrWhiteSpace(effect.Stat) || !Enum.TryParse(effect.Stat, out Stat stat)) continue;
+
+                int amount = ResolveEffectAmount(effect, values);
+                if (amount == 0) continue;
+
+                // 百分比效果按玩家当前属性值折算为绝对值
+                if (IsEffectPercent(def, effect))
+                    amount = player.Stats[stat] * amount / 100;
+
+                if (amount == 0) continue;
+                stats[stat] += amount;
+            }
+
+            if (stats.Count == 0) return;
+
+            // 生效持续时间：优先取勾选「时长」占位符的 roll 值；否则取固定 Duration；<=0 默认 5 秒（事件型）
+            int durationSeconds = ResolveDurationSeconds(def, values);
+            if (durationSeconds <= 0) durationSeconds = 5;
+
+            // 同词条 buff 已存在 → 累计持续时间；否则新建（多次触发可累计生效时间）
+            BuffInfo currentBuff = player.Buffs.FirstOrDefault(x => x.Type == BuffType.AffixTrigger && x.ItemIndex == def.Index);
+
+            if (currentBuff != null)
+            {
+                if (!accumulate) return;   // 持续型条件：效果存活期内不重复触发
+
+                currentBuff.RemainingTime += TimeSpan.FromSeconds(durationSeconds);
+                player.Enqueue(new S.BuffTime { Index = currentBuff.Index, Time = currentBuff.RemainingTime });
+                return;
+            }
+
+            currentBuff = SEnvir.BuffInfoList.CreateNewObject();
+            currentBuff.Type = BuffType.AffixTrigger;
+            currentBuff.ItemIndex = def.Index;
+            currentBuff.BuffIcon = def.BuffIcon;
+            currentBuff.RemainingTime = TimeSpan.FromSeconds(durationSeconds);
+            currentBuff.Stats = stats;
+            currentBuff.Visible = true;
+            currentBuff.Pause = false;
+            currentBuff.TickFrequency = TimeSpan.Zero;
+            currentBuff.Character = player.Character;
+
+            player.Buffs.Add(currentBuff);
+            player.Enqueue(new S.BuffAdd { Buff = currentBuff.ToClientInfo() });
+
+            player.RefreshStats();
         }
 
 

@@ -118,7 +118,7 @@ namespace Server.WebApi
                     {
                         ValidateIssuer = true,
                         ValidateAudience = true,
-                        ValidateLifetime = true,
+                        ValidateLifetime = false, // Token 永不过期
                         ValidateIssuerSigningKey = true,
                         ValidIssuer = "ZirconLegendServer",
                         ValidAudience = "ZirconWebUI",

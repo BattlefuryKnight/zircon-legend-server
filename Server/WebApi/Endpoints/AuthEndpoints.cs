@@ -76,7 +76,7 @@ namespace Server.WebApi.Endpoints
                 RefreshToken = refreshToken,
                 Email = account.EMailAddress,
                 Identity = account.Identify.ToString(),
-                ExpiresIn = Envir.Config.WebApiJwtExpiration * 60
+                ExpiresIn = 0 // 永不过期
             });
         }
 
@@ -115,7 +115,7 @@ namespace Server.WebApi.Endpoints
                 RefreshToken = refreshToken,
                 Email = account.EMailAddress,
                 Identity = account.Identify.ToString(),
-                ExpiresIn = Envir.Config.WebApiJwtExpiration * 60
+                ExpiresIn = 0 // 永不过期
             });
         }
 

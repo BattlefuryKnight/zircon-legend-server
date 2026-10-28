@@ -6,228 +6,128 @@
   <title>词条管理 - 皓石传奇三管理后台</title>
   <link rel="stylesheet" href="css/themes.css">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="vendor/element-ui.css">
   <style>
-    .form-input, .form-select {
-      padding: 0.5rem 0.75rem;
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-      font-size: 0.875rem;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    .form-input:focus, .form-select:focus {
-      outline: none;
-      border-color: var(--primary);
-    }
-    .form-input[readonly] {
+    /* ===== Element UI 全面暗色适配 ===== */
+    .el-dialog {
       background: var(--bg-secondary);
-      cursor: not-allowed;
-    }
-    .form-select {
-      min-width: 150px;
-    }
-    textarea.form-input {
-      resize: vertical;
-    }
-    .pagination {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 0.5rem;
-      margin-top: 1rem;
-      padding-top: 1rem;
-      border-top: 1px solid var(--border-color);
-    }
-    .pagination button {
-      padding: 0.5rem 0.75rem;
       border: 1px solid var(--border-color);
-      border-radius: 6px;
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-      cursor: pointer;
-      font-size: 0.875rem;
-      transition: all 0.2s;
-    }
-    .pagination button:hover:not(:disabled) {
-      background: var(--bg-primary);
-      border-color: var(--primary);
-    }
-    .pagination button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    .pagination button.active {
-      background: var(--primary);
-      border-color: var(--primary);
-      color: white;
-    }
-    .pagination span {
-      color: var(--text-tertiary);
-      font-size: 0.875rem;
-    }
-    .item-type {
-      display: inline-block;
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 500;
-    }
-    .item-type.weapon { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-    .item-type.armour { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
-    .item-type.helmet { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
-    .item-type.necklace { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
-    .item-type.bracelet { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
-    .item-type.ring { background: rgba(234, 179, 8, 0.2); color: #eab308; }
-    .item-type.potion, .item-type.consumable { background: rgba(14, 165, 233, 0.2); color: #0ea5e9; }
-    .item-type.default { background: rgba(107, 114, 128, 0.2); color: #6b7280; }
-
-    .action-btns {
-      display: flex;
-      gap: 0.5rem;
-    }
-    .btn-icon {
-      padding: 0.25rem 0.5rem;
-      font-size: 0.75rem;
-    }
-
-    /* Modal styles */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 1000;
-    }
-    .modal.show {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-backdrop {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-    }
-    .modal-content {
-      position: relative;
-      background: var(--bg-secondary);
       border-radius: 12px;
-      max-width: 500px;
-      width: 90%;
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+      display: flex; flex-direction: column;
+      max-height: 92vh; max-width: 96vw;
     }
-    .modal-content.modal-large {
-      max-width: 800px;
+    .el-dialog__title { color: var(--text-primary); }
+    .el-dialog__header { flex: 0 0 auto; border-bottom: 1px solid var(--border-color); }
+    .el-dialog__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; color: var(--text-primary); }
+    .el-dialog__footer { flex: 0 0 auto; border-top: 1px solid var(--border-color); }
+    .el-form-item__label { color: var(--text-secondary); }
+    .el-input__inner, .el-textarea__inner {
+      background: var(--bg-tertiary); color: var(--text-primary); border-color: var(--border-color);
     }
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem 1.5rem;
-      border-bottom: 1px solid var(--border-color);
+    .el-input__inner:focus { border-color: var(--primary); }
+    .el-select .el-input__inner { background: var(--bg-tertiary); color: var(--text-primary); }
+    .el-input-number__decrease, .el-input-number__increase {
+      background: var(--bg-tertiary); color: var(--text-secondary); border-color: var(--border-color);
     }
-    .modal-title {
-      margin: 0;
-      font-size: 1.25rem;
-      font-weight: 600;
-    }
-    .modal-close {
-      background: none;
-      border: none;
-      font-size: 1.5rem;
-      cursor: pointer;
-      color: var(--text-secondary);
-      line-height: 1;
-    }
-    .modal-close:hover {
-      color: var(--text-primary);
-    }
-    .modal-body {
-      padding: 1.5rem;
-    }
-    .modal-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.75rem;
-      padding: 1rem 1.5rem;
-      border-top: 1px solid var(--border-color);
+    .el-input-number.is-disabled .el-input__inner {
+      background: var(--bg-secondary); color: var(--text-tertiary); border-color: var(--border-color);
     }
 
-    /* Form styles */
-    .form-group {
-      margin-bottom: 1rem;
-    }
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: var(--text-secondary);
-    }
-    .form-grid {
-      display: grid;
-      gap: 1.5rem;
-    }
-    .form-section {
-      background: var(--bg-tertiary);
-      padding: 1rem;
-      border-radius: 8px;
-    }
-    .form-section-title {
-      margin: 0 0 1rem 0;
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: var(--primary);
-    }
-    .form-row {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1rem;
-    }
-    .form-row .form-group {
-      margin-bottom: 0.5rem;
-    }
-    .form-row .form-group.full-width {
-      grid-column: span 2;
-    }
-    .checkbox-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      cursor: pointer;
-      font-size: 0.875rem;
-    }
-    .checkbox-label input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
+    /* 表格：斑马纹 / 表头 / hover / 固定列 全暗色 */
+    .el-table { background-color: transparent; color: var(--text-primary); }
+    .el-table::before { display: none; }
+    .el-table th, .el-table th.is-leaf { background-color: var(--bg-tertiary) !important; color: var(--text-secondary) !important; border-bottom: 1px solid var(--border-color); }
+    .el-table tr { background-color: var(--bg-secondary) !important; }
+    .el-table .cell { color: var(--text-primary); }
+    .el-table td { border-bottom: 1px solid var(--border-color); }
+    .el-table--border, .el-table--group { border-color: var(--border-color); }
+    .el-table--border::after, .el-table--group::after { background-color: var(--border-color); }
+    .el-table--border td, .el-table--border th { border-right: 1px solid var(--border-color); }
+    .el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell { background: var(--bg-tertiary) !important; }
+    .el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell { background-color: var(--bg-tertiary) !important; }
+    .el-table__empty-block { background: var(--bg-secondary); }
+    .el-table__empty-text { color: var(--text-tertiary); }
+    .el-table__fixed, .el-table__fixed-right { background: transparent !important; box-shadow: none; }
+    .el-table__fixed-right td.el-table__cell, .el-table__fixed td.el-table__cell { background-color: var(--bg-secondary) !important; }
+    .el-table__fixed::before, .el-table__fixed-right::before { background-color: var(--border-color); }
+
+    /* 分页暗色 */
+    .el-pagination { margin-top: 1rem; justify-content: center; }
+    .el-pagination__total, .el-pagination__jump { color: var(--text-secondary); }
+    .el-pagination__sizes .el-input .el-input__inner { color: var(--text-secondary); }
+    .el-pagination .btn-prev, .el-pagination .btn-next { background: var(--bg-tertiary) !important; color: var(--text-primary); }
+    .el-pagination--background .el-pager li { background: var(--bg-tertiary); color: var(--text-primary); }
+    .el-pagination--background .el-pager li.active { background: var(--primary); color: #fff; }
+    .el-pagination--background .el-pager li:hover { color: var(--primary); }
+
+    /* 按钮暗色（默认白底改暗） */
+    .el-button { background: var(--bg-tertiary) !important; color: var(--text-primary) !important; border-color: var(--border-color) !important; }
+    .el-button:hover, .el-button:focus { background: var(--bg-secondary) !important; color: var(--primary) !important; border-color: var(--primary) !important; }
+    .el-button--primary { background: #409eff !important; color: #fff !important; border-color: #409eff !important; }
+    .el-button--primary:hover, .el-button--primary:focus { background: #66b1ff !important; color: #fff !important; border-color: #66b1ff !important; }
+    .el-button--danger { background: #f56c6c !important; color: #fff !important; border-color: #f56c6c !important; }
+    .el-button--danger:hover, .el-button--danger:focus { background: #f78989 !important; color: #fff !important; border-color: #f78989 !important; }
+    .el-button.is-disabled, .el-button.is-disabled:hover {
+      background: var(--bg-tertiary); color: var(--text-tertiary); border-color: var(--border-color);
     }
 
-    /* affixes 专用补充 */
-    .form-control { width: 100%; }
-    .form-control, .form-input, .form-select { background: var(--bg-secondary, transparent); color: #fff; }
+    /* 标签暗色 */
+    .el-tag { background-color: rgba(64, 158, 255, 0.15) !important; border-color: rgba(64, 158, 255, 0.4) !important; color: #409eff !important; }
+    .el-tag--success { background-color: rgba(103, 194, 58, 0.15) !important; border-color: rgba(103, 194, 58, 0.4) !important; color: #67c23a !important; }
+    .el-tag--info { background-color: rgba(144, 147, 153, 0.15) !important; border-color: rgba(144, 147, 153, 0.4) !important; color: #909399 !important; }
+
+    /* 下拉/浮层暗色 */
+    .el-select-dropdown, .el-dropdown-menu, .el-picker-panel, .el-date-picker, .el-popover {
+      background: var(--bg-secondary); border-color: var(--border-color); color: var(--text-primary);
+    }
+    .el-select-dropdown__item { color: var(--text-primary); }
+    .el-select-dropdown__item.hover, .el-select-dropdown__item:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+    .el-select-dropdown__item.selected { color: var(--primary); font-weight: 600; }
+    .el-select-group__title, .el-select-dropdown__empty { color: var(--text-tertiary); }
+    .el-select-group__wrap:not(:last-of-type)::after { background-color: var(--border-color); }
+    .el-message-box { background: var(--bg-secondary); border: 1px solid var(--border-color); }
+    .el-message-box__title, .el-message-box__content { color: var(--text-primary); }
+    .el-message-box__headerbtn .el-message-box__close { color: var(--text-secondary); }
+
+    /* switch / checkbox / divider */
+    .el-switch__core { border-color: var(--border-color); background: var(--bg-tertiary); }
+    .el-checkbox__label, .el-radio__label { color: var(--text-primary); }
+    .el-checkbox__input.is-disabled + .el-checkbox__label { color: var(--text-tertiary); }
+    .el-checkbox-group { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; }
+    .el-divider__text { color: var(--text-secondary); background: var(--bg-secondary); }
+    .el-divider--horizontal { background-color: var(--border-color); }
+    .el-input-number { width: 130px; }
+
+    /* loading 遮罩 */
+    .el-loading-mask { background-color: rgba(0, 0, 0, 0.45); }
+    .el-loading-spinner .path { stroke: var(--primary); }
+    .el-loading-spinner .el-loading-text { color: var(--text-secondary); }
+
+    /* 表单布局 */
+    .affix-preview {
+      padding: 0.75rem; border: 1px dashed var(--border-color); border-radius: 6px;
+      color: var(--text-secondary); min-height: 2.5rem; margin-top: 0.5rem; font-size: 0.875rem;
+    }
+    .param-row-card, .effect-row-card {
+      display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;
+      padding: 0.5rem 0.6rem; background: var(--bg-tertiary);
+      border: 1px solid var(--border-color); border-radius: 8px; flex-wrap: wrap;
+    }
+    .p-label { flex: 0 0 86px; color: var(--text-secondary); white-space: nowrap; font-size: 0.85rem; }
+    .effect-row-card .el-select { flex: 1 1 200px; min-width: 200px; }
+    .dialog-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1.25rem; }
+    .dialog-form-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .field-hint { font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.35rem; line-height: 1.4; }
+    .icon-preview {
+      width: 36px; height: 36px; border: 1px solid var(--border-color); border-radius: 6px;
+      object-fit: contain; background: rgba(0, 0, 0, 0.3);
+    }
+    .dashed-btn { width: 100%; border-style: dashed; color: var(--text-secondary); }
+    .dashed-btn:hover { color: var(--text-primary); }
     .mono { font-family: Consolas, monospace; }
-    #editModal input[type="text"], #editModal input[type="number"], #editModal select, #editModal textarea { color: #fff; }
-    #editModal input::placeholder, #editModal textarea::placeholder { color: rgba(255, 255, 255, 0.35); }
-    .param-row, .effect-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
-    .param-row input, .effect-row select, .effect-row input { width: auto; }
-    .affix-preview { padding: 0.75rem; border: 1px dashed var(--border-color); border-radius: 6px; color: var(--text-secondary); min-height: 2.5rem; }
-    .badge-on { color: var(--success); }
-    .badge-off { color: var(--error); }
+    @media (max-width: 720px) {
+      .dialog-form-grid, .dialog-form-grid-4 { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -413,137 +313,154 @@
 
       <div class="page-content">
         <div class="card animate-in">
-          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <div id="app">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem;">
             <h3 class="card-title">装备词条配置</h3>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <input type="text" id="searchInput" class="form-control" placeholder="搜索词条名称" style="width: 200px;" onkeydown="if(event.key==='Enter') loadAffixes(1)">
-              <button class="btn btn-secondary btn-sm" onclick="loadAffixes(1)">搜索</button>
-              <button class="btn btn-primary btn-sm" onclick="showEditModal(null)">
-                + 新增词条
-              </button>
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+              <el-input placeholder="搜索词条名称" style="width:220px" v-model="search" @keyup.enter="loadAffixes()" clearable></el-input>
+              <el-button size="small" @click="loadAffixes()">搜索</el-button>
+              <el-button type="primary" size="small" @click="openCreate()">+ 新增词条</el-button>
             </div>
           </div>
-          <div class="card-body">
-            <div style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.75rem;">
-              共 <span id="totalCount">0</span> 条词条。怪物掉落装备时按 <b>权重</b> 随机附加词条；删除词条会自动从已有装备中移除。
+
+            <el-table :data="affixes" v-loading="loading" border stripe size="small" style="width:100%">
+              <el-table-column prop="index" label="ID" width="60"></el-table-column>
+              <el-table-column label="名称" width="140">
+                <template slot-scope="scope"><b>{{scope.row.name}}</b></template>
+              </el-table-column>
+              <el-table-column label="模板" min-width="200">
+                <template slot-scope="scope"><span class="mono">{{scope.row.template}}</span></template>
+              </el-table-column>
+              <el-table-column label="效果" min-width="180">
+                <template slot-scope="scope">{{effectsText(scope.row.effects)}}</template>
+              </el-table-column>
+              <el-table-column label="条件" width="160">
+                <template slot-scope="scope">{{conditionText(scope.row)}}</template>
+              </el-table-column>
+              <el-table-column label="适用类型" width="150">
+                <template slot-scope="scope">{{typesText(scope.row.applicableTypes)}}</template>
+              </el-table-column>
+              <el-table-column label="等级" width="100">
+                <template slot-scope="scope">{{levelText(scope.row)}}</template>
+              </el-table-column>
+              <el-table-column prop="weight" label="权重" width="70"></el-table-column>
+              <el-table-column label="状态" width="80">
+                <template slot-scope="scope">
+                  <el-tag :type="scope.row.enabled ? 'success' : 'info'" size="small">{{scope.row.enabled ? '启用' : '停用'}}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="130" fixed="right">
+                <template slot-scope="scope">
+                  <el-button size="mini" @click="openEdit(scope.row)">编辑</el-button>
+                  <el-button size="mini" type="danger" @click="deleteAffix(scope.row)">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            <div style="margin-top:1rem;text-align:center;">
+              <el-pagination background layout="total, sizes, prev, pager, next, jumper"
+                :total="total" :page-size="pageSize" :current-page="page" :page-sizes="[20, 50, 100]"
+                @current-change="p => { page = p; loadAffixes(); }"
+                @size-change="s => { pageSize = s; page = 1; loadAffixes(); }"></el-pagination>
             </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>名称</th>
-                    <th>模板</th>
-                    <th>效果</th>
-                    <th>条件</th>
-                    <th>适用类型</th>
-                    <th>等级</th>
-                    <th>权重</th>
-                    <th>状态</th>
-                    <th>操作</th>
-                  </tr>
-                </thead>
-                <tbody id="affixTableBody">
-                  <tr><td colspan="10" style="text-align: center; color: var(--text-tertiary);">加载中...</td></tr>
-                </tbody>
-              </table>
+
+          <!-- 编辑弹窗 -->
+          <el-dialog :title="editingIndex === null ? '新增词条' : '编辑词条 #' + editingIndex" :visible.sync="dialogVisible" width="1080px" top="4vh" append-to-body>
+            <el-form label-width="110px">
+              <el-form-item label="词条名称" required>
+                <el-input v-model="form.name" placeholder="如：嗜血"></el-input>
+              </el-form-item>
+              <el-form-item label="显示模板" required>
+                <el-input v-model="form.template" placeholder="血量低于{0}%时，暴击率增加{1}%"></el-input>
+                <div class="affix-preview">{{previewText}}</div>
+              </el-form-item>
+
+              <el-divider content-position="left">随机参数（占位符取值范围）</el-divider>
+              <div v-for="(p, i) in form.params" :key="i" class="param-row-card">
+                <span class="p-label">占位符 {{i}}:</span>
+                <el-input-number v-model="p.min" size="small" :min="-9999" :max="99999"></el-input-number>
+                <span style="color:var(--text-tertiary);">~</span>
+                <el-input-number v-model="p.max" size="small" :min="-9999" :max="99999"></el-input-number>
+                <el-checkbox v-model="p.isPercent" @change="onParamFlagChange(p, 'isPercent')">百分比</el-checkbox>
+                <el-checkbox v-model="p.isDuration" @change="onParamFlagChange(p, 'isDuration')">时长(秒)</el-checkbox>
+                <el-button size="mini" type="danger" @click="removeParamRow(i)">删除</el-button>
+              </div>
+              <el-button class="dashed-btn" size="small" @click="addParamRow()">+ 添加参数</el-button>
+
+              <el-divider content-position="left">属性效果</el-divider>
+              <div v-for="(e, i) in form.effects" :key="i" class="effect-row-card">
+                <el-select v-model="e.stat" size="small" filterable placeholder="搜索/选择属性">
+                  <el-option-group v-for="cat in categoryOrder" :key="cat" :label="categoryLabel[cat]">
+                    <el-option v-for="s in groupedStats[cat]" :key="s.value" :value="s.value" :label="s.title + ' (' + s.value + ')'"></el-option>
+                  </el-option-group>
+                </el-select>
+                <el-checkbox v-model="e.useParam">引用占位符</el-checkbox>
+                <el-input-number v-if="e.useParam" v-model="e.paramIndex" size="small" :min="0" :max="50" placeholder="占位符索引"></el-input-number>
+                <el-input-number v-else v-model="e.fixedAmount" size="small" :min="-999999" :max="999999" placeholder="固定数值"></el-input-number>
+                <el-button size="mini" type="danger" @click="removeEffectRow(i)">删除</el-button>
+              </div>
+              <el-button class="dashed-btn" size="small" @click="addEffectRow()">+ 添加效果</el-button>
+
+              <el-divider content-position="left">触发条件</el-divider>
+              <div class="dialog-form-grid">
+                <el-form-item label="条件类型">
+                  <el-select v-model="form.conditionType" style="width:100%;">
+                    <el-option v-for="c in meta.conditions" :key="c.value" :value="c.value" :label="c.title"></el-option>
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="条件参数索引">
+                  <el-input-number v-model="form.conditionParamIndex" :min="-1" :max="50"></el-input-number>
+                  <div class="field-hint">-1 = 不使用；事件型条件必须引用概率占位符。</div>
+                </el-form-item>
+              </div>
+
+              <el-divider content-position="left">适用范围</el-divider>
+              <el-form-item label="适用装备类型">
+                <el-checkbox-group v-model="form.applicableTypes" style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+                  <el-checkbox v-for="t in meta.itemTypes" :key="t.value" :label="t.value">{{t.title}}</el-checkbox>
+                </el-checkbox-group>
+              </el-form-item>
+
+              <el-divider content-position="left">数值配置</el-divider>
+              <div class="dialog-form-grid dialog-form-grid-4">
+                <el-form-item label="最小等级"><el-input-number v-model="form.minLevel" :min="-1"></el-input-number></el-form-item>
+                <el-form-item label="最大等级"><el-input-number v-model="form.maxLevel" :min="-1"></el-input-number></el-form-item>
+                <el-form-item label="出现权重"><el-input-number v-model="form.weight" :min="1"></el-input-number></el-form-item>
+                <el-form-item label="启用"><el-switch v-model="form.enabled"></el-switch></el-form-item>
+              </div>
+
+              <el-divider content-position="left">触发配置</el-divider>
+              <div class="dialog-form-grid">
+                <el-form-item label="持续时间(秒)">
+                  <div class="field-hint" style="margin-top:0;">{{durationHint}}</div>
+                </el-form-item>
+                <el-form-item label="Buff 图标">
+                  <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                    <el-upload :show-file-list="false" accept=".png,.jpg,.jpeg,.bmp" :before-upload="beforeIconUpload" :http-request="uploadIcon" :disabled="form.conditionType === 'None'">
+                      <el-button size="small" :disabled="form.conditionType === 'None'">上传图标</el-button>
+                    </el-upload>
+                    <img v-if="form.buffIcon" :src="'/bufficons/' + form.buffIcon" class="icon-preview" alt="">
+                    <span class="field-hint">{{form.conditionType === 'None' ? '静态词条属性持续生效，无需配置。' : (form.buffIcon ? '已上传：' + form.buffIcon : '未上传时客户端使用默认 buff 图标。')}}</span>
+                  </div>
+                </el-form-item>
+              </div>
+            </el-form>
+            <div slot="footer">
+              <el-button @click="dialogVisible = false">取消</el-button>
+              <el-button type="primary" @click="saveAffix()">保存</el-button>
             </div>
-            <div class="pagination" id="pagination"></div>
+          </el-dialog>
           </div>
         </div>
       </div>
     </main>
   </div>
-
-  <!-- 编辑弹窗 -->
-  <div class="modal" id="editModal">
-    <div class="modal-backdrop" onclick="closeEditModal()"></div>
-    <div class="modal-content modal-large">
-      <div class="modal-header">
-        <h3 class="modal-title" id="modalTitle">新增词条</h3>
-        <button class="modal-close" onclick="closeEditModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>词条名称 *</label>
-          <input type="text" id="f_name" class="form-control" placeholder="如：嗜血">
-        </div>
-        <div class="form-group">
-          <label>显示模板 *（{0} {1} ... 为随机数值占位符）</label>
-          <input type="text" id="f_template" class="form-control" placeholder="血量低于{0}%时，暴击率增加{1}%" oninput="updatePreview()">
-          <div class="affix-preview" id="templatePreview">预览区域</div>
-        </div>
-
-        <div class="form-group">
-          <label>随机参数（占位符取值范围）</label>
-          <div id="paramList"></div>
-          <button class="btn btn-secondary btn-sm" onclick="addParamRow()">+ 添加参数</button>
-        </div>
-
-        <div class="form-group">
-          <label>属性效果</label>
-          <div id="effectList"></div>
-          <button class="btn btn-secondary btn-sm" onclick="addEffectRow()">+ 添加效果</button>
-        </div>
-
-        <div class="form-group">
-          <label>触发条件</label>
-          <div style="display: flex; gap: 0.5rem; align-items: center;">
-            <select id="f_conditionType" class="form-select" style="width: 240px;" onchange="updatePreview()"></select>
-            <input type="number" id="f_conditionParamIndex" class="form-control" placeholder="条件参数占位符索引" style="width: 180px;" value="-1" title="引用哪个占位符作为条件值，-1 表示不使用">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>适用装备类型（不选 = 全部装备）</label>
-          <div id="typeCheckList" style="display: flex; flex-wrap: wrap; gap: 0.75rem;"></div>
-        </div>
-
-        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-          <div class="form-group" style="flex: 1;">
-            <label>装备最小等级（-1 不限）</label>
-            <input type="number" id="f_minLevel" class="form-control" value="-1">
-          </div>
-          <div class="form-group" style="flex: 1;">
-            <label>装备最大等级（-1 不限）</label>
-            <input type="number" id="f_maxLevel" class="form-control" value="-1">
-          </div>
-          <div class="form-group" style="flex: 1;">
-            <label>出现权重</label>
-            <input type="number" id="f_weight" class="form-control" value="100">
-          </div>
-          <div class="form-group" style="flex: 1;">
-            <label>启用</label>
-            <select id="f_enabled" class="form-select">
-              <option value="true">启用</option>
-              <option value="false">停用</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeEditModal()">取消</button>
-        <button class="btn btn-primary" onclick="saveAffix()">保存</button>
-      </div>
-    </div>
-  </div>
-
   <script src="js/theme.js"></script>
+  <script src="vendor/vue.min.js"></script>
+  <script src="vendor/element-ui.js"></script>
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
   <script>
-    let currentPage = 1;
-    let totalPages = 1;
-    const pageSize = 50;
-    let meta = { stats: [], itemTypes: [], conditions: [] };
-    let editingIndex = null;
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      if (!checkAuth()) { window.location.href = 'index.html'; return; }
-      loadUserInfo();
-      await loadMeta();
-      await loadAffixes(1);
-    });
+    if (!checkAuth()) { window.location.href = 'index.html'; }
 
     function loadUserInfo() {
       const user = getUser();
@@ -553,214 +470,185 @@
         document.getElementById('userAvatar').textContent = user.email.charAt(0).toUpperCase();
       }
     }
+    loadUserInfo();
 
-    async function loadMeta() {
-      try {
-        meta = await api.get('/api/game/affixes/meta');
-        // 属性列表按中文标题排序，便于查找（如 生命窃取/生命恢复）
-        meta.stats.sort((a, b) => (a.title || a.value).localeCompare(b.title || b.value, 'zh'));
-        const condSel = document.getElementById('f_conditionType');
-        condSel.innerHTML = meta.conditions.map(c => `<option value="${c.value}">${escapeHtml(c.title)}</option>`).join('');
-        document.getElementById('typeCheckList').innerHTML = meta.itemTypes.map(t =>
-          `<label style="display:flex;align-items:center;gap:0.25rem;"><input type="checkbox" class="type-check" value="${t.value}"> ${escapeHtml(t.title)}</label>`).join('');
-      } catch (e) { console.error('加载元数据失败', e); }
-    }
-
-    async function loadAffixes(page) {
-      currentPage = page || 1;
-      try {
-        const search = document.getElementById('searchInput').value.trim();
-        const data = await api.get(`/api/game/affixes?page=${currentPage}&pageSize=${pageSize}` + (search ? `&search=${encodeURIComponent(search)}` : ''));
-        totalPages = data.totalPages || 1;
-        document.getElementById('totalCount').textContent = data.total || 0;
-        renderTable(data.affixes || []);
-        renderPagination();
-      } catch (error) {
-        document.getElementById('affixTableBody').innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--error);">加载失败: ${error.message}</td></tr>`;
+    const affixApp = new Vue({
+      el: '#app',
+      data: {
+        loading: false,
+        page: 1,
+        pageSize: 50,
+        total: 0,
+        search: '',
+        affixes: [],
+        meta: { stats: [], itemTypes: [], conditions: [] },
+        dialogVisible: false,
+        editingIndex: null,
+        form: {
+          name: '', template: '', params: [], effects: [],
+          conditionType: 'None', conditionParamIndex: -1,
+          applicableTypes: [], minLevel: -1, maxLevel: -1,
+          weight: 100, enabled: true, duration: 0, buffIcon: ''
+        },
+      },
+      computed: {
+        categoryOrder() { return ['percent', 'both', 'value', 'unsuitable']; },
+        categoryLabel() {
+          return {
+            percent: '① 仅百分比（建议参数勾选"百分比"）',
+            both: '② 百分比 / 数值均可',
+            value: '③ 仅数值（建议参数不勾选"百分比"）',
+            unsuitable: '④ ⚠ 不建议用于装备属性'
+          };
+        },
+        groupedStats() {
+          const g = { percent: [], both: [], value: [], unsuitable: [] };
+          (this.meta.stats || []).forEach(s => {
+            const cat = s.category || 'value';
+            if (!g[cat]) g[cat] = [];
+            g[cat].push(s);
+          });
+          return g;
+        },
+        isEventCondition() {
+          return ['OnAttackMonster', 'OnAttackPlayer', 'OnDamaged', 'OnDeath', 'OnRespawn'].includes(this.form.conditionType);
+        },
+        durationHint() {
+          if (this.form.conditionType === 'None') return '静态词条属性持续生效，无需持续时间。';
+          const base = '时长 = 在「随机参数」中勾选「时长(秒)」的占位符，其 roll 值即持续时间（秒，请勿同时勾选百分比）。';
+          if (this.isEventCondition) return base + ' 未勾选或值 <=0 时默认 5 秒；多次触发可累加。';
+          return base + ' 未勾选或值 <=0 时，条件满足期间持续生效。';
+        },
+        previewText() {
+          const template = this.form.template || '预览区域';
+          const values = (this.form.params || []).map(p => p.min === p.max ? p.min : Math.floor((p.min + p.max) / 2));
+          let text = template;
+          try {
+            text = template.replace(/\{(\d+)\}/g, (m, i) => values[+i] !== undefined ? values[+i] : m);
+          } catch (e) { /* 忽略 */ }
+          return '效果示例：' + text;
+        },
+      },
+      methods: {
+        async loadMeta() {
+          try { this.meta = await api.get('/api/game/affixes/meta'); }
+          catch (e) { console.error('加载元数据失败', e); }
+        },
+        async loadAffixes() {
+          this.loading = true;
+          try {
+            const data = await api.get('/api/game/affixes', { page: this.page, pageSize: this.pageSize, search: this.search.trim() || undefined });
+            this.affixes = data.affixes || [];
+            this.total = data.total || 0;
+          } catch (e) { this.$message.error('加载失败: ' + e.message); }
+          finally { this.loading = false; }
+        },
+        statTitle(v) { const s = (this.meta.stats || []).find(x => x.value === v); return s ? s.title : v; },
+        typeTitle(v) { const s = (this.meta.itemTypes || []).find(x => x.value === v); return s ? s.title : v; },
+        effectsText(effects) {
+          return (effects || []).map(e => this.statTitle(e.stat) + (e.useParam ? ('={' + e.paramIndex + '}') : ('=' + e.fixedAmount))).join('、') || '-';
+        },
+        conditionText(row) {
+          const t = (this.meta.conditions || []).find(c => c.value === row.conditionType);
+          const base = t ? t.title : (row.conditionType || 'None');
+          return (row.conditionType !== 'None' && row.conditionParamIndex >= 0) ? (base + '({' + row.conditionParamIndex + '})') : base;
+        },
+        typesText(types) {
+          return (types || []).length ? types.map(t => this.typeTitle(t)).join('、') : '全部装备';
+        },
+        levelText(row) {
+          if (row.minLevel < 0 && row.maxLevel < 0) return '不限';
+          return (row.minLevel < 0 ? 0 : row.minLevel) + ' ~ ' + (row.maxLevel < 0 ? '∞' : row.maxLevel);
+        },
+        addParamRow() { this.form.params.push({ min: 0, max: 0, isPercent: true, isDuration: false }); },
+        onParamFlagChange(p, flag) {
+          if (p[flag]) {
+            if (flag === 'isPercent') p.isDuration = false;
+            else p.isPercent = false;
+          }
+        },
+        removeParamRow(i) { this.form.params.splice(i, 1); },
+        addEffectRow() { this.form.effects.push({ stat: '', useParam: true, fixedAmount: 0, paramIndex: 0 }); },
+        removeEffectRow(i) { this.form.effects.splice(i, 1); },
+        openCreate() {
+          this.editingIndex = null;
+          this.form = {
+            name: '', template: '', params: [], effects: [],
+            conditionType: 'None', conditionParamIndex: -1,
+            applicableTypes: [], minLevel: -1, maxLevel: -1,
+            weight: 100, enabled: true, duration: 0, buffIcon: ''
+          };
+          this.dialogVisible = true;
+        },
+        openEdit(row) {
+          this.editingIndex = row.index;
+          this.form = {
+            name: row.name || '', template: row.template || '',
+            params: (row.params || []).map(p => ({ min: p.min, max: p.max, isPercent: p.isPercent, isDuration: p.isDuration === true })),
+            effects: (row.effects || []).map(e => ({ stat: e.stat, useParam: e.useParam, fixedAmount: e.fixedAmount, paramIndex: e.paramIndex })),
+            conditionType: row.conditionType || 'None', conditionParamIndex: row.conditionParamIndex,
+            applicableTypes: row.applicableTypes || [], minLevel: row.minLevel, maxLevel: row.maxLevel,
+            weight: row.weight, enabled: row.enabled, duration: row.duration || 0, buffIcon: row.buffIcon || ''
+          };
+          this.dialogVisible = true;
+        },
+        async saveAffix() {
+          if (!this.form.name.trim()) { this.$message.warning('请输入词条名称'); return; }
+          if (!this.form.template.trim()) { this.$message.warning('请输入显示模板'); return; }
+          const body = {
+            name: this.form.name.trim(), template: this.form.template.trim(),
+            paramDefs: this.form.params.map(p => ({ min: p.min || 0, max: p.max || 0, isPercent: !!p.isPercent, isDuration: !!p.isDuration })),
+            effects: this.form.effects.map(e => ({ stat: e.stat, useParam: !!e.useParam, fixedAmount: e.fixedAmount || 0, paramIndex: e.paramIndex || 0 })),
+            conditionType: this.form.conditionType, conditionParamIndex: this.form.conditionParamIndex,
+            applicableTypes: this.form.applicableTypes, minLevel: this.form.minLevel, maxLevel: this.form.maxLevel,
+            weight: this.form.weight, enabled: this.form.enabled, duration: this.form.duration, buffIcon: (this.form.buffIcon || '').trim()
+          };
+          try {
+            const res = this.editingIndex === null
+              ? await api.post('/api/game/affixes', body)
+              : await api.put('/api/game/affixes/' + this.editingIndex, body);
+            this.$message.success(res.message || '保存成功');
+            this.dialogVisible = false;
+            await this.loadAffixes();
+          } catch (e) { this.$message.error('保存失败: ' + e.message); }
+        },
+        async deleteAffix(row) {
+          try {
+            await this.$confirm('确定删除词条【' + row.name + '】？\n\n该操作会同时从所有已有装备中移除此词条！', '删除确认', { type: 'warning' });
+          } catch (e) { return; }
+          try {
+            const res = await api.delete('/api/game/affixes/' + row.index);
+            this.$message.success(res.message || '删除成功');
+            await this.loadAffixes();
+          } catch (e) { this.$message.error('删除失败: ' + e.message); }
+        },
+        beforeIconUpload(file) {
+          const ok = /\.(png|jpg|jpeg|bmp)$/i.test(file.name);
+          if (!ok) { this.$message.error('仅支持 png/jpg/bmp 图标'); return false; }
+          if (file.size > 512 * 1024) { this.$message.error('图标不能超过 512KB'); return false; }
+          return true;
+        },
+        async uploadIcon(opt) {
+          const fd = new FormData();
+          fd.append('file', opt.file);
+          const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+          try {
+            const res = await fetch(window.location.origin + '/api/game/affixes/icon', {
+              method: 'POST',
+              headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+              body: fd
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || '上传失败');
+            this.form.buffIcon = data.fileName;
+            this.$message.success(data.message || '图标上传成功');
+          } catch (e) { this.$message.error('上传失败: ' + e.message); }
+        },
+      },
+      mounted() {
+        this.loadMeta().then(() => this.loadAffixes());
       }
-    }
-
-    function renderTable(affixes) {
-      if (affixes.length === 0) {
-        document.getElementById('affixTableBody').innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-tertiary);">暂无词条，点击右上角新增</td></tr>';
-        return;
-      }
-      document.getElementById('affixTableBody').innerHTML = affixes.map(a => {
-        const effects = (a.effects || []).map(e => statTitle(e.stat) + (e.useParam ? `={${e.paramIndex}}` : `=${e.fixedAmount}`)).join('、') || '-';
-        const cond = conditionTitle(a.conditionType) + (a.conditionType !== 'None' && a.conditionParamIndex >= 0 ? `({${a.conditionParamIndex}})` : '');
-        const types = (a.applicableTypes || []).map(t => typeTitle(t)).join('、') || '全部装备';
-        const levels = (a.minLevel < 0 && a.maxLevel < 0) ? '不限' : `${a.minLevel < 0 ? 0 : a.minLevel} ~ ${a.maxLevel < 0 ? '∞' : a.maxLevel}`;
-        return `<tr>
-          <td>${a.index}</td>
-          <td><b>${escapeHtml(a.name)}</b></td>
-          <td class="mono" style="max-width:280px;">${escapeHtml(a.template)}</td>
-          <td>${escapeHtml(effects)}</td>
-          <td>${escapeHtml(cond)}</td>
-          <td>${escapeHtml(types)}</td>
-          <td>${levels}</td>
-          <td>${a.weight}</td>
-          <td class="${a.enabled ? 'badge-on' : 'badge-off'}">${a.enabled ? '启用' : '停用'}</td>
-          <td>
-            <button class="btn btn-secondary btn-sm" onclick='showEditModal(${JSON.stringify(a)})'>编辑</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteAffix(${a.index}, '${escapeHtml(a.name)}')">删除</button>
-          </td>
-        </tr>`;
-      }).join('');
-    }
-
-    function renderPagination() {
-      const el = document.getElementById('pagination');
-      let html = '';
-      for (let i = 1; i <= totalPages; i++) html += `<button class="${i === currentPage ? 'active' : ''}" onclick="loadAffixes(${i})">${i}</button>`;
-      el.innerHTML = html;
-    }
-
-    function statTitle(v) { const s = meta.stats.find(x => x.value === v); return s ? s.title : v; }
-    function typeTitle(v) { const t = meta.itemTypes.find(x => x.value === v); return t ? t.title : v; }
-    function conditionTitle(v) { const c = meta.conditions.find(x => x.value === v); return c ? c.title : v; }
-
-    // ---------- 编辑弹窗 ----------
-    function showEditModal(affix) {
-      editingIndex = affix ? affix.index : null;
-      document.getElementById('modalTitle').textContent = affix ? `编辑词条 #${affix.index}` : '新增词条';
-      document.getElementById('f_name').value = affix ? affix.name : '';
-      document.getElementById('f_template').value = affix ? affix.template : '';
-      document.getElementById('f_conditionType').value = affix ? affix.conditionType : 'None';
-      document.getElementById('f_conditionParamIndex').value = affix ? affix.conditionParamIndex : -1;
-      document.getElementById('f_minLevel').value = affix ? affix.minLevel : -1;
-      document.getElementById('f_maxLevel').value = affix ? affix.maxLevel : -1;
-      document.getElementById('f_weight').value = affix ? affix.weight : 100;
-      document.getElementById('f_enabled').value = affix ? String(affix.enabled) : 'true';
-      document.querySelectorAll('.type-check').forEach(cb => {
-        cb.checked = affix && affix.applicableTypes ? affix.applicableTypes.includes(cb.value) : false;
-      });
-
-      document.getElementById('paramList').innerHTML = '';
-      (affix && affix.params ? affix.params : []).forEach(p => addParamRow(p.min, p.max, p.isPercent));
-      document.getElementById('effectList').innerHTML = '';
-      (affix && affix.effects ? affix.effects : []).forEach(e => addEffectRow(e.stat, e.useParam, e.fixedAmount, e.paramIndex));
-
-      updatePreview();
-      document.getElementById('editModal').classList.add('show');
-    }
-
-    function closeEditModal() { document.getElementById('editModal').classList.remove('show'); }
-
-    function addParamRow(min, max, isPercent) {
-      const div = document.createElement('div');
-      div.className = 'param-row';
-      div.innerHTML = `
-        <span style="color:var(--text-secondary);white-space:nowrap;">占位符 {${document.querySelectorAll('#paramList .param-row').length}}:</span>
-        <input type="number" class="form-control p-min" placeholder="最小值" value="${min !== undefined ? min : 0}" style="width:110px;">
-        <span>~</span>
-        <input type="number" class="form-control p-max" placeholder="最大值" value="${max !== undefined ? max : 0}" style="width:110px;">
-        <label style="display:flex;align-items:center;gap:0.25rem;white-space:nowrap;"><input type="checkbox" class="p-percent" onchange="updatePreview()"> 百分比</label>
-        <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove(); updatePreview();">删除</button>`;
-      div.querySelectorAll('input').forEach(inp => inp.addEventListener('input', updatePreview));
-      document.getElementById('paramList').appendChild(div);
-      div.querySelector('.p-percent').checked = isPercent !== false;
-      renumberParams();
-    }
-
-    function renumberParams() {
-      document.querySelectorAll('#paramList .param-row').forEach((row, i) => {
-        row.querySelector('span').textContent = `占位符 {${i}}:`;
-      });
-    }
-
-    function filterStatOptions(input) {
-      const q = (input.value || '').trim().toLowerCase();
-      const sel = input.parentElement.querySelector('.e-stat');
-      if (!sel) return;
-      Array.from(sel.options).forEach(o => {
-        const text = (o.textContent || '').toLowerCase();
-        o.style.display = (!q || text.includes(q)) ? '' : 'none';
-      });
-    }
-    function addEffectRow(stat, useParam, fixedAmount, paramIndex) {
-      const div = document.createElement('div');
-      div.className = 'effect-row';
-      div.innerHTML = `
-        <span style="display:inline-flex;gap:0.25rem;align-items:center;">
-          <input type="text" class="form-control e-stat-filter" placeholder="搜索属性" style="width:100px;" oninput="filterStatOptions(this)">
-                  <select class="form-select e-stat">${meta.stats.map(s => `<option value="${s.value}" ${s.value === stat ? 'selected' : ''}>${escapeHtml(s.title)} (${s.value})</option>`).join('')}</select>
-        </span>
-        <label style="display:flex;align-items:center;gap:0.25rem;white-space:nowrap;"><input type="checkbox" class="e-useparam" ${useParam ? 'checked' : ''} onchange="this.closest('.effect-row').querySelector('.e-fixed').style.display = this.checked ? 'none' : ''; this.closest('.effect-row').querySelector('.e-pindex').style.display = this.checked ? '' : 'none';"> 引用占位符</label>
-        <input type="number" class="form-control e-pindex" placeholder="占位符索引" value="${paramIndex !== undefined ? paramIndex : 0}" style="width:130px; ${useParam ? '' : 'display:none;'}">
-        <input type="number" class="form-control e-fixed" placeholder="固定数值" value="${fixedAmount !== undefined ? fixedAmount : 0}" style="width:130px; ${useParam ? 'display:none;' : ''}">
-        <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">删除</button>`;
-      document.getElementById('effectList').appendChild(div);
-    }
-
-    function updatePreview() {
-      const template = document.getElementById('f_template').value || '预览区域';
-      const values = [];
-      document.querySelectorAll('#paramList .param-row').forEach(row => {
-        const min = parseInt(row.querySelector('.p-min').value) || 0;
-        const max = parseInt(row.querySelector('.p-max').value) || 0;
-        values.push(min === max ? min : Math.floor((min + max) / 2));
-      });
-      let preview;
-      try { preview = template.replace(/\{(\d+)\}/g, (m, i) => values[+i] !== undefined ? values[+i] : m); }
-      catch { preview = template; }
-      document.getElementById('templatePreview').textContent = '效果示例：' + preview;
-    }
-
-    async function saveAffix() {
-      const params = [];
-      document.querySelectorAll('#paramList .param-row').forEach(row => {
-        params.push({ min: parseInt(row.querySelector('.p-min').value) || 0, max: parseInt(row.querySelector('.p-max').value) || 0, isPercent: row.querySelector('.p-percent').checked });
-      });
-      const effects = [];
-      document.querySelectorAll('#effectList .effect-row').forEach(row => {
-        effects.push({
-          stat: row.querySelector('.e-stat').value,
-          useParam: row.querySelector('.e-useparam').checked,
-          fixedAmount: parseInt(row.querySelector('.e-fixed').value) || 0,
-          paramIndex: parseInt(row.querySelector('.e-pindex').value) || 0,
-        });
-      });
-      const body = {
-        name: document.getElementById('f_name').value.trim(),
-        template: document.getElementById('f_template').value.trim(),
-        paramDefs: params,
-        effects: effects,
-        conditionType: document.getElementById('f_conditionType').value,
-        conditionParamIndex: parseInt(document.getElementById('f_conditionParamIndex').value) || -1,
-        applicableTypes: Array.from(document.querySelectorAll('.type-check:checked')).map(cb => cb.value),
-        minLevel: parseInt(document.getElementById('f_minLevel').value) || -1,
-        maxLevel: parseInt(document.getElementById('f_maxLevel').value) || -1,
-        weight: parseInt(document.getElementById('f_weight').value) || 100,
-        enabled: document.getElementById('f_enabled').value === 'true',
-      };
-
-      try {
-        const res = editingIndex === null
-          ? await api.post('/api/game/affixes', body)
-          : await api.put(`/api/game/affixes/${editingIndex}`, body);
-        alert(res.message || '保存成功');
-        closeEditModal();
-        await loadAffixes(currentPage);
-      } catch (error) {
-        alert('保存失败: ' + error.message);
-      }
-    }
-
-    async function deleteAffix(index, name) {
-      if (!confirm(`确定删除词条【${name}】？\n\n该操作会同时从所有已有装备中移除此词条！`)) return;
-      try {
-        const res = await api.delete(`/api/game/affixes/${index}`);
-        alert(res.message || '删除成功');
-        await loadAffixes(currentPage);
-      } catch (error) {
-        alert('删除失败: ' + error.message);
-      }
-    }
-
-    function escapeHtml(text) {
-      if (text === null || text === undefined) return '';
-      return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
+    });
   </script>
 </body>
 </html>

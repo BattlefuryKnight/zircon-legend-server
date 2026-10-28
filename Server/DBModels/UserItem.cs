@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Drawing;
 using Library;
@@ -573,6 +573,7 @@ namespace Server.DBModels
                     .Select(x => x.DisplayText)
                     .ToList(),
                 AffixStats = GetAffixStats(),
+                AffixRates = GetAffixRates(),
                 CustomRarity = EncodeRarityValue(),
 
                 ExpireTime =  ExpireTime,
@@ -588,6 +589,59 @@ namespace Server.DBModels
             return (byte)((byte)Rarity + 1);
         }
 
+        /// <summary>
+        /// 词条品质百分比（0~100）：取主效果引用的占位符 roll 值在其 [Min,Max] 区间的位置；
+        /// 无占位符效果或区间无效时返回 100（视为满值/固定值）。
+        /// </summary>
+        private List<int> GetAffixRates()
+        {
+            var rates = new List<int>();
+
+            if (Affixes == null) return rates;
+
+            foreach (UserItemAffix instance in Affixes)
+            {
+                var def = instance?.Affix;
+                if (def == null)
+                {
+                    rates.Add(100);
+                    continue;
+                }
+
+                int[] values = AffixSystem.ParseValues(instance.Values);
+                var paramDefs = AffixSystem.ParseParams(def.ParamsJson);
+                var effects = AffixSystem.ParseEffects(def.EffectsJson);
+
+                int index = -1;
+                foreach (var effect in effects)
+                {
+                    if (!effect.UseParam) continue;
+
+                    index = effect.ParamIndex;
+                    break;
+                }
+
+                if (index < 0 || index >= paramDefs.Count || index >= values.Length)
+                {
+                    rates.Add(100);
+                    continue;
+                }
+
+                int min = Math.Min(paramDefs[index].Min, paramDefs[index].Max);
+                int max = Math.Max(paramDefs[index].Min, paramDefs[index].Max);
+
+                if (max <= min)
+                {
+                    rates.Add(100);
+                    continue;
+                }
+
+                int rate = (int)Math.Round((values[index] - min) * 100.0 / (max - min));
+                rates.Add(Math.Max(0, Math.Min(100, rate)));
+            }
+
+            return rates;
+        }
         private Stats GetAffixStats()
         {
             var result = new Stats();

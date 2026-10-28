@@ -40,7 +40,6 @@ namespace Server.WebApi.Auth
                 issuer: _issuer,
                 audience: _audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(Config.WebApiJwtExpiration),
                 signingCredentials: credentials
             );
 
@@ -67,7 +66,7 @@ namespace Server.WebApi.Auth
                 {
                     ValidateIssuer = true,
                     ValidateAudience = true,
-                    ValidateLifetime = true,
+                    ValidateLifetime = false, // Token 永不过期
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = _issuer,
                     ValidAudience = _audience,

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Security.Claims;
 using Library;
 using Library.SystemModels;
@@ -26,6 +28,7 @@ namespace Server.WebApi.Endpoints
             group.MapPost("/affixes", CreateAffix);
             group.MapPut("/affixes/{index:int}", UpdateAffix);
             group.MapDelete("/affixes/{index:int}", DeleteAffix);
+            group.MapPost("/affixes/icon", UploadIcon);
         }
 
         #region Handlers
@@ -86,7 +89,7 @@ namespace Server.WebApi.Endpoints
                 var field = typeof(Stat).GetField(stat.ToString());
                 var desc = field?.GetCustomAttribute<StatDescription>();
 
-                stats.Add(new { value = stat.ToString(), title = desc?.Title ?? stat.ToString() });
+                stats.Add(new { value = stat.ToString(), title = desc?.Title ?? stat.ToString(), category = GetStatCategory(stat, desc) });
             }
 
             var itemTypes = new List<object>();
@@ -229,8 +232,13 @@ namespace Server.WebApi.Endpoints
 
             if (placeholderIndexes.Count > 0 && placeholderIndexes.Any(n => n >= paramCount))
                 return (false, $"模板占位符 {{{placeholderIndexes.Max()}}} 超出参数数量（当前 {paramCount} 个参数），请补充随机参数或修改模板");
-            if (!Enum.TryParse<AffixConditionType>(request.ConditionType ?? "None", out _))
+            if (!Enum.TryParse<AffixConditionType>(request.ConditionType ?? "None", out var condition))
                 return (false, $"无效的条件类型: {request.ConditionType}");
+
+            // 事件触发型条件必须引用一个占位符参数作为触发概率（如 Min=5, Max=15 表示 5%~15% 概率）
+            if (condition >= AffixConditionType.OnAttackMonster &&
+                (request.ConditionParamIndex == null || request.ConditionParamIndex < 0))
+                return (false, "事件触发型条件（攻击/受击/死亡/复活）必须引用一个占位符参数作为触发概率，请设置“条件参数占位符索引”");
 
             return (true, string.Empty);
         }
@@ -251,6 +259,8 @@ namespace Server.WebApi.Endpoints
             def.MaxLevel = request.MaxLevel ?? -1;
             def.Weight = request.Weight ?? 100;
             def.Enabled = request.Enabled ?? true;
+            def.Duration = request.Duration ?? 0;
+            def.BuffIcon = request.BuffIcon?.Trim();
         }
 
         private static string? JsonSerializerNullable<T>(List<T>? value)
@@ -268,7 +278,7 @@ namespace Server.WebApi.Endpoints
                 index = def.Index,
                 name = def.AffixName ?? "",
                 template = def.Template ?? "",
-                @params = paramDefs.Select(p => new { min = p.Min, max = p.Max, isPercent = p.IsPercent }).ToList(),
+                @params = paramDefs.Select(p => new { min = p.Min, max = p.Max, isPercent = p.IsPercent, isDuration = p.IsDuration }).ToList(),
                 effects = effectDefs.Select(e => new
                 {
                     stat = e.Stat,
@@ -285,7 +295,35 @@ namespace Server.WebApi.Endpoints
                 maxLevel = def.MaxLevel,
                 weight = def.Weight,
                 enabled = def.Enabled,
+                duration = def.Duration,
+                buffIcon = def.BuffIcon ?? "",
             };
+        }
+
+        private static async Task<IResult> UploadIcon(ClaimsPrincipal user, IFormFile file)
+        {
+            if (!JwtHelper.HasMinimumIdentity(user, AccountIdentity.SuperAdmin))
+                return Results.Forbid();
+
+            if (file == null || file.Length == 0 || file.Length > 512 * 1024)
+                return Results.BadRequest(new { message = "请上传有效的图标文件（≤512KB）" });
+
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (ext != ".png" && ext != ".jpg" && ext != ".jpeg" && ext != ".bmp")
+                return Results.BadRequest(new { message = "仅支持 png/jpg/bmp 图标" });
+
+            string dir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "bufficons");
+            Directory.CreateDirectory(dir);
+
+            string fileName = $"{Guid.NewGuid():N}{ext}";
+            string fullPath = Path.Combine(dir, fileName);
+
+            using (var stream = File.Create(fullPath))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            return Results.Ok(new { message = "图标上传成功", fileName });
         }
 
         private static string GetConditionTitle(AffixConditionType condition)
@@ -296,11 +334,50 @@ namespace Server.WebApi.Endpoints
                 case AffixConditionType.HealthPercentBelow: return "血量低于{参数}%时";
                 case AffixConditionType.MagicPercentBelow: return "魔法低于{参数}%时";
                 case AffixConditionType.NightTime: return "夜间";
+                case AffixConditionType.OnAttackMonster: return "攻击怪物时{参数}%概率触发";
+                case AffixConditionType.OnAttackPlayer: return "攻击人物时{参数}%概率触发";
+                case AffixConditionType.OnDamaged: return "受到攻击时{参数}%概率触发";
+                case AffixConditionType.OnDeath: return "死亡时{参数}%概率触发";
+                case AffixConditionType.OnRespawn: return "复活时{参数}%概率触发";
                 default: return condition.ToString();
             }
         }
 
         #endregion
+
+        /// <summary>
+        /// 词条“属性效果”推荐分类（新增词条时下拉分组提示）：
+        /// percent=仅建议百分比；both=百分比/数值均可；value=仅建议数值；unsuitable=不建议用于装备属性。
+        /// 注意：引擎本身不强制百分比/数值（由参数 IsPercent 决定），此处为按 Stat 存储格式与语义给出的配置建议。
+        /// </summary>
+        private static readonly HashSet<Stat> BothCategoryStats = new HashSet<Stat>
+        {
+            Stat.Health, Stat.Mana,
+            Stat.MinAC, Stat.MaxAC, Stat.MinMR, Stat.MaxMR,
+            Stat.MinDC, Stat.MaxDC, Stat.MinMC, Stat.MaxMC, Stat.MinSC, Stat.MaxSC,
+        };
+
+        /// <summary>Percent 模式但属于全局/地图/特殊标记，不适合作为装备词条效果</summary>
+        private static readonly HashSet<Stat> UnsuitableCategoryStats = new HashSet<Stat>
+        {
+            Stat.MonsterExperience, Stat.MonsterGold, Stat.MonsterDrop, Stat.MonsterDamage, Stat.MonsterHealth,
+            Stat.MaxMonsterExperience, Stat.MaxMonsterGold, Stat.MaxMonsterDrop, Stat.MaxMonsterDamage, Stat.MaxMonsterHealth,
+            Stat.BaseExperienceRate, Stat.BaseGoldRate, Stat.BaseDropRate,
+            Stat.SaleBonus5, Stat.SaleBonus10, Stat.SaleBonus15, Stat.SaleBonus20,
+        };
+
+        private static string GetStatCategory(Stat stat, StatDescription desc)
+        {
+            if (UnsuitableCategoryStats.Contains(stat)) return "unsuitable";
+            if (desc != null)
+            {
+                if (desc.Mode == StatType.Text || desc.Mode == StatType.None || desc.Mode == StatType.Time)
+                    return "unsuitable";
+            }
+            if (BothCategoryStats.Contains(stat)) return "both";
+            if (desc?.Mode == StatType.Percent) return "percent";
+            return "value";
+        }
 
         #region Request
 
@@ -317,6 +394,8 @@ namespace Server.WebApi.Endpoints
             public int? MaxLevel { get; set; }
             public int? Weight { get; set; }
             public bool? Enabled { get; set; }
+            public int? Duration { get; set; }
+            public string? BuffIcon { get; set; }
         }
 
         public class AffixParamDto
@@ -325,6 +404,8 @@ namespace Server.WebApi.Endpoints
             public int Max { get; set; }
             /// <summary>true=百分比生效，false=数值生效（旧配置默认百分比）</summary>
             public bool IsPercent { get; set; } = true;
+            /// <summary>true=该占位符的 roll 值作为词条效果持续时间（秒）</summary>
+            public bool IsDuration { get; set; }
         }
         public class AffixEffectDto
         {

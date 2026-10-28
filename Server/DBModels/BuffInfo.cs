@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Library;
 using MirDB;
 
@@ -128,6 +128,21 @@ namespace Server.DBModels
             }
         }
         private int _ItemIndex;
+
+        public string BuffIcon
+        {
+            get { return _BuffIcon; }
+            set
+            {
+                if (_BuffIcon == value) return;
+
+                var oldValue = _BuffIcon;
+                _BuffIcon = value;
+
+                OnChanged(oldValue, value, "BuffIcon");
+            }
+        }
+        private string _BuffIcon;
         
 
         public bool Visible
@@ -200,6 +215,7 @@ namespace Server.DBModels
                 Pause = Pause,
                 Stats = Stats,
                 ItemIndex = ItemIndex,
+                BuffIcon = BuffIcon,
             };
         }
     }

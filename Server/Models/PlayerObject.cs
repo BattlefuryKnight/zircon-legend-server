@@ -233,14 +233,20 @@ namespace Zircon.Server.Models
         private bool _HasConditionalAffixes;
         private int _LastAffixHP = -1;
         private int _LastAffixMP = -1;
+        private DateTime _NextAffixTimeCheck = DateTime.MinValue;
 
         public override void Process()
         {
             base.Process();
 
-            // 条件词条：血量/魔法变化时重新评估（RefreshStats 会重算并更新基准值）
-            if (_HasConditionalAffixes && (CurrentHP != _LastAffixHP || CurrentMP != _LastAffixMP))
-                RefreshStats();
+            // 条件词条：血量/魔法变化或定时兜底（夜间等时间型条件）时重新评估
+            if (_HasConditionalAffixes)
+            {
+                bool affixTimeCheck = SEnvir.Now >= _NextAffixTimeCheck;
+                if (affixTimeCheck) _NextAffixTimeCheck = SEnvir.Now.AddSeconds(30);
+                if (affixTimeCheck || CurrentHP != _LastAffixHP || CurrentMP != _LastAffixMP)
+                    RefreshStats();
+            }
 
             // if (LastHitter != null && LastHitter.Node == null) LastHitter = null;
             if (GroupInvitation != null && GroupInvitation.Node == null) GroupInvitation = null;
@@ -1091,6 +1097,9 @@ namespace Zircon.Server.Models
             Dead = false;
             SetHP(Stats[Stat.Health]);
             SetMP(Stats[Stat.Mana]);
+
+            // 词条事件触发：复活
+            AffixSystem.TryTriggerEventAffix(this, AffixConditionType.OnRespawn);
 
             Broadcast(new S.ObjectRevive { ObjectID = ObjectID, Location = CurrentLocation, Effect = true });
         }
@@ -3624,6 +3633,9 @@ namespace Zircon.Server.Models
         public override void ItemRevive()
         {
             base.ItemRevive();
+
+            // 词条事件触发：复活
+            AffixSystem.TryTriggerEventAffix(this, AffixConditionType.OnRespawn);
 
             Character.ItemReviveTime = ItemReviveTime;
 
@@ -7321,6 +7333,9 @@ namespace Zircon.Server.Models
                             Dead = false;
                             SetHP(Stats[Stat.Health]);
                             SetMP(Stats[Stat.Mana]);
+
+                            // 词条事件触发：复活
+                            AffixSystem.TryTriggerEventAffix(this, AffixConditionType.OnRespawn);
 
                             Character.ReincarnationPillTime = SEnvir.Now.AddSeconds(item.Info.Stats[Stat.ItemReviveTime]);
 
@@ -17289,6 +17304,12 @@ namespace Zircon.Server.Models
 
             if (damage <= 0) return;
 
+            // 词条事件触发：攻击怪物 / 攻击人物
+            if (ob.Race == ObjectType.Monster)
+                AffixSystem.TryTriggerEventAffix(this, AffixConditionType.OnAttackMonster);
+            else if (ob.Race == ObjectType.Player)
+                AffixSystem.TryTriggerEventAffix(this, AffixConditionType.OnAttackPlayer);
+
 
             CheckBrown(ob);
 
@@ -18166,6 +18187,9 @@ namespace Zircon.Server.Models
             ChangeHP(-power);
             LastHitter = null;
 
+            // 词条事件触发：受到攻击
+            AffixSystem.TryTriggerEventAffix(this, AffixConditionType.OnDamaged);
+
             if (canReflect && CanAttackTarget(attacker) && attacker.Race != ObjectType.Player)
             {
                 attacker.Attacked(this, power * Stats[Stat.ReflectDamage] / 100, Element.None, false);
@@ -18721,6 +18745,9 @@ namespace Zircon.Server.Models
             TaggedMonsters.Clear();
 
             base.Die();
+
+            // 词条事件触发：死亡
+            AffixSystem.TryTriggerEventAffix(this, AffixConditionType.OnDeath);
 
             for (int i = SpellList.Count - 1; i >= 0; i--)
                 SpellList[i].Despawn();
